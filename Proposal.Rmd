@@ -5,6 +5,22 @@ date: "28 October 2016"
 output: pdf_document
 ---
 
+  Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model.
+
+Explanation of variables:
+1) *id*... A couple's identification number during the study
+2) *edu*... The husband's education level. 
+  - 0 = less than 12 years
+  - 1 = 12 to 15 years
+  - 2 = 16 or more years
+3) *hblack*... Coded 1 if the husband is black, 0 otherwise
+4) *mixed*... Coded 1 if the couple is of different ethnicities, 0 otherwise
+  - ethnicities are defined as either being "black" or "other"
+5) *years*... The number of years from wedding to either divorce or censorship
+6) *div*... The failure indicator
+  - 1 = divorced
+  - 0 = censored
+
 ```{r}
 # Attach packages
 library(ggplot2)
@@ -152,20 +168,33 @@ ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
 
 ```
 
-Explanation of variables:
+Exploratory Analysis
 
-1) id... A couple's identification number during the study
-2) edu... The husband's education level. 
-  - 0 = less than 12 years
-  - 1 = 12 to 15 years
-  - 2 = 16 or more years
-3) hblack... Coded 1 if the husband is black, 0 otherwise
-4) mixed... Coded 1 if the couple is of different ethnicities, 0 otherwise
-  - ethnicities are defined as either being "black" or "other"
-5) years... The number of years from wedding to either divorce or censorship
-6) div... The failure indicator
-  - 1 = divorced
-  - 0 = censored
+Baseline KM Estimate
+```{r}
+divorcefit <- Surv(time = divorce$years, event = divorce$div)
+divorceKM <- survfit(divorcefit ~ 1)
 
-Proposal:
-  Our team would like to investigate the relationship between the covariates listed above and the time until a couple's divorce. 
+ggsurv(divorceKM) +
+  ggtitle("KM Estimate - Baseline Model") +
+  ylab("Survival Probability") +
+  xlab("Time in Years")
+
+```
+
+Cox Proportional Hazards Model
+```{r, echo = FALSE}
+logRank1 <- coxph(divorcefit ~ 1)
+summary(logRank1)
+```
+
+Furthur Exploratory Analysis
+```{r}
+
+ggplot(divorce) +
+  geom_boxplot(mapping = aes(x = as.factor(div), y = years, group = ))
+
+```
+
+
+
