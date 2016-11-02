@@ -10,18 +10,19 @@ pdf_document:
   Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model.
 
 # Explanation of variables:
-1) *id*... A couple's identification number during the study
-2) *edu*... The husband's education level. 
-  - 0 = less than 12 years (only high school)
-  - 1 = 12 to 15 years (only bachelors or equivalent)
-  - 2 = 16 or more years (some form of graduate studies)
-3) *hblack*... Coded 1 if the husband is black, 0 otherwise
-4) *mixed*... Coded 1 if the couple is of different ethnicities, 0 otherwise
-  - ethnicities are defined as either being "black" or "other"
-5) *years*... The number of years from wedding to either divorce or censorship
-6) *div*... The failure indicator
-  - 1 = divorced
-  - 0 = censored
+### 1) *id*... A couple's identification number during the study
+
+### 2) *edu*... The husband's education level. 
+     - 0 = less than 12 years (only high school)
+     - 1 = 12 to 15 years (only bachelors or equivalent)
+     - 2 = 16 or more years (some form of graduate studies)
+### 3) *hblack*... Coded 1 if the husband is black, 0 otherwise
+### 4) *mixed*... Coded 1 if the couple is of different ethnicities, 0 otherwise
+        - ethnicities are defined as either being "black" or "other"
+### 5) *years*... The number of years from wedding to either divorce or censorship
+### 6) *div*... The failure indicator
+      - 1 = divorced
+      - 0 = censored
 
 ```{r}
 # Attach packages
