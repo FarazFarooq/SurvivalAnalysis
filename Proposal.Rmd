@@ -24,6 +24,7 @@ pdf_document:
       - 1 = divorced
       - 0 = censored
 
+# Code to Make Graphs Look Nicer 
 ```{r}
 # Attach packages
 library(ggplot2)
