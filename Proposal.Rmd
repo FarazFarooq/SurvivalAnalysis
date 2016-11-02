@@ -10,9 +10,9 @@ output: pdf_document
 Explanation of variables:
 1) *id*... A couple's identification number during the study
 2) *edu*... The husband's education level. 
-  - 0 = less than 12 years
-  - 1 = 12 to 15 years
-  - 2 = 16 or more years
+  - 0 = less than 12 years (only high school)
+  - 1 = 12 to 15 years (only bachelors or equivalent)
+  - 2 = 16 or more years (some form of graduate studies)
 3) *hblack*... Coded 1 if the husband is black, 0 otherwise
 4) *mixed*... Coded 1 if the couple is of different ethnicities, 0 otherwise
   - ethnicities are defined as either being "black" or "other"
@@ -25,7 +25,11 @@ Explanation of variables:
 # Attach packages
 library(ggplot2)
 library(survival)
+library(cowplot)
 
+setwd("~/Documents/Fall/PSTAT175/SurvivalAnalysis")
+
+print(script.dir)
 # Load data
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
 divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
@@ -170,16 +174,39 @@ ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
 
 Exploratory Analysis
 
-Baseline KM Estimate
+The plots show the following estimates (clockwise from top left).
+1) The baseline KM estimate for all observations
+2) The KM estimates for the level of education
+3) The KM estimates for mixed and non-mixed couples
+4) The KM estimates for couples with and without a black husband
 ```{r}
 divorcefit <- Surv(time = divorce$years, event = divorce$div)
 divorceKM <- survfit(divorcefit ~ 1)
+educateKM <- survfit(divorcefit ~ divorce$edu)
+mixedKM <- survfit(divorcefit ~ divorce$mixed)
+hblackKM <- survfit(divorcefit ~ divorce$hblack)
 
-ggsurv(divorceKM) +
-  ggtitle("KM Estimate - Baseline Model") +
+a <- ggsurv(divorceKM) +
+  ggtitle("Baseline Model") +
   ylab("Survival Probability") +
   xlab("Time in Years")
 
+b <- ggsurv(educateKM, plot.cens = F) +
+  ggtitle("Estimates by Education Level") +
+  ylab("Survival Probability") +
+  xlab("Time in Years")
+
+c <- ggsurv(mixedKM, plot.cens = F) +
+  ggtitle("Estimates for Mixed \n and Non-Mixed Couples") +
+  ylab("Survival Probability") +
+  xlab("Time in Years")
+
+d <- ggsurv(hblackKM, plot.cens = F) +
+  ggtitle("Estimates for Black \n and Non-Black Husbands") +
+  ylab("Survival Probability") +
+  xlab("Time in Years")
+
+plot_grid(a,b,c,d, nrow = 2, ncol = 2)
 ```
 
 Cox Proportional Hazards Model
@@ -190,11 +217,21 @@ summary(logRank1)
 
 Furthur Exploratory Analysis
 ```{r}
-
 ggplot(divorce) +
-  geom_boxplot(mapping = aes(x = as.factor(div), y = years, group = ))
-
+  geom_boxplot(mapping = aes(x = as.factor(edu), y = years, 
+                             group = edu, fill = as.factor(edu)))
+ggplot(divorce) +
+  geom_boxplot(mapping = aes(x = as.factor(hblack), y = years,
+                             group = hblack, fill = as.factor(hblack)))
 ```
 
+```{r, echo = FALSE}
+Ncensored <- sum( divorce$div == 0 )
+Ndiv <- nrow(divorce) - Ncensored
 
+a <- paste("Number of censored observations =", Ncensored)
+b <- paste("Number of observed divorces =", Ndiv)
+
+neatPrint(c(a,b))
+```
 
