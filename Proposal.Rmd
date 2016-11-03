@@ -4,7 +4,7 @@ author: "Alex Brown, David Geyfman, Faraz Farooq, Jason Freeberg"
 date: "28 October 2016"
 output: pdf_document
 pdf_document:
- highlight: espresso
+highlight: espresso
 ---
 # Questions
   Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model.
@@ -24,7 +24,6 @@ pdf_document:
       - 1 = divorced
       - 0 = censored
 
-# Code to Make Graphs Look Nicer 
 ```{r}
 # Attach packages
 library(ggplot2)
@@ -40,6 +39,7 @@ divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
 head(divorce)
 ```
 
+# Code to Make Graphs Look Nicer 
 ```{r, echo=FALSE}
 # Define the neatPrint function, makes for nicer output in Rmarkdown
 neatPrint <- function(listOfStrings){
