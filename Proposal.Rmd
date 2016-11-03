@@ -1,9 +1,11 @@
 ---
-title: "Project Proposal"
+pdf_document:
 author: "Alex Brown, David Geyfman, Faraz Farooq, Jason Freeberg"
 date: "28 October 2016"
-output: pdf_document
-pdf_document:
+output: 
+  pdf_document: 
+    highlight: espresso
+title: "Project Proposal"
 highlight: espresso
 ---
 # Questions
@@ -30,9 +32,8 @@ library(ggplot2)
 library(survival)
 library(cowplot)
 
-setwd("~/Documents/Fall/PSTAT175/SurvivalAnalysis")
+#setwd("~/Documents/Fall/PSTAT175/SurvivalAnalysis")
 
-print(script.dir)
 # Load data
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
 divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
