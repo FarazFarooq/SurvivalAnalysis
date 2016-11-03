@@ -241,3 +241,8 @@ b <- paste("Number of observed divorces =", Ndiv)
 neatPrint(c(a,b))
 ```
 
+
+
+
+
+check 1 2!
