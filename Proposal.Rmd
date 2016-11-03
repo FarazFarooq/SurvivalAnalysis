@@ -3,11 +3,14 @@ title: "Project Proposal"
 author: "Alex Brown, David Geyfman, Faraz Farooq, Jason Freeberg"
 date: "28 October 2016"
 output: pdf_document
-pdf_document:
 highlight: espresso
 ---
-# Questions
+
+# Question Goals
   Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model.
+
+# Additional Component
+  Since our group has one extra person we will take an extra step beyond the base project requirements. After we meet the base requirements on Gauchospace, our group will write a step-by-step tutorial for the project. We will explain the basic statistical methods and functions of the Survival package. We will then publsh the tutorial on Inertia7.com, a website crated by UCSB graduates for hosting data science and statistics project tutorials. 
 
 # Explanation of variables:
 ### 1) *id*... A couple's identification number during the study
@@ -24,23 +27,22 @@ highlight: espresso
       - 1 = divorced
       - 0 = censored
 
-```{r}
-# Attach packages
+```{r, warning=FALSE, error=FALSE}
 library(ggplot2)
 library(survival)
 library(cowplot)
 
-setwd("~/Documents/Fall/PSTAT175/SurvivalAnalysis")
+# setwd("~/Documents/Fall/PSTAT175/SurvivalAnalysis")
 
-print(script.dir)
 # Load data
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
 divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
 head(divorce)
 ```
 
-# Code to Make Graphs Look Nicer 
 ```{r, echo=FALSE}
+# THIS BLOCK WILL NOT BE IN THE PDF FILE, REMEMBER TO GIVE CREDIT
+
 # Define the neatPrint function, makes for nicer output in Rmarkdown
 neatPrint <- function(listOfStrings){
   cat(listOfStrings, fill = 1)
@@ -240,9 +242,3 @@ b <- paste("Number of observed divorces =", Ndiv)
 
 neatPrint(c(a,b))
 ```
-
-
-
-
-
-check 1 2!
