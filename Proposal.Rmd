@@ -242,3 +242,12 @@ b <- paste("Number of observed divorces =", Ndiv)
 
 neatPrint(c(a,b))
 ```
+<<<<<<< HEAD
+
+
+
+
+
+check 1 2!
+=======
+>>>>>>> origin/master
