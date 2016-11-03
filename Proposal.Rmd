@@ -5,6 +5,7 @@ date: "28 October 2016"
 output: pdf_document
 highlight: espresso
 ---
+
 # Question Goals
   Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model.
 
@@ -241,9 +242,12 @@ b <- paste("Number of observed divorces =", Ndiv)
 
 neatPrint(c(a,b))
 ```
+<<<<<<< HEAD
 
 
 
 
 
 check 1 2!
+=======
+>>>>>>> origin/master
