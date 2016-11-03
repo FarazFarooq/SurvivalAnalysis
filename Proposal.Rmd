@@ -247,4 +247,3 @@ neatPrint(c(a,b))
 
 
 check 1 2!
-## hello
