@@ -7,32 +7,29 @@ highlight: espresso
 ---
 
 # Question Goals
-  Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model.
+  Our team would like to investigate how a couple's race and years of education relate to the time until a couple's divorce. The full explanations of all covariates are listed below. We will begin with the simplest model solely based on time and event status. Then we will add covariates to the model, check their significance and arrive at a final model. We will likely use stratified predictors and tests because we have an array of categorical predictors.
 
 # Additional Component
-  Since our group has one extra person we will take an extra step beyond the base project requirements. After we meet the base requirements on Gauchospace, our group will write a step-by-step tutorial for the project. We will explain the basic statistical methods and functions of the Survival package. We will then publsh the tutorial on Inertia7.com, a website crated by UCSB graduates for hosting data science and statistics project tutorials. 
+  Since our group has one extra person we will take an extra step beyond the base project requirements. After we meet the base requirements on Gauchospace, our group will write a step-by-step tutorial for our project. We will explain the basic statistical methods and functions of the Survival package. We will then publsh the tutorial on Inertia7.com, a website crated by UCSB graduates for hosting data science and statistics project tutorials. Then the tutorial can serve as a helpful reference for future PSTAT 175 students.
 
 # Explanation of variables:
-### 1) *id*... A couple's identification number during the study
+### 1) *id* ... A couple's identification number during the study
+### 2) *edu* ... The husband's education level. 
+        0 = less than 12 years (only high school)
+        1 = 12 to 15 years (only bachelors or equivalent)
+        2 = 16 or more years (some form of graduate studies)
+### 3) *hblack* ... Coded 1 if the husband is black, 0 otherwise
+### 4) *mixed* ... Coded 1 if the couple is of different ethnicities, 0 otherwise
+        ethnicities are defined as either being "black" or "other"
+### 5) *years* ... The number of years from wedding to either divorce or censorship
+### 6) *div* ... The failure indicator
+        1 = divorced
+        0 = censored
 
-### 2) *edu*... The husband's education level. 
-     - 0 = less than 12 years (only high school)
-     - 1 = 12 to 15 years (only bachelors or equivalent)
-     - 2 = 16 or more years (some form of graduate studies)
-### 3) *hblack*... Coded 1 if the husband is black, 0 otherwise
-### 4) *mixed*... Coded 1 if the couple is of different ethnicities, 0 otherwise
-        - ethnicities are defined as either being "black" or "other"
-### 5) *years*... The number of years from wedding to either divorce or censorship
-### 6) *div*... The failure indicator
-      - 1 = divorced
-      - 0 = censored
-
-```{r, warning=FALSE, error=FALSE}
+```{r, message=FALSE}
 library(ggplot2)
 library(survival)
 library(cowplot)
-
-# setwd("~/Documents/Fall/PSTAT175/SurvivalAnalysis")
 
 # Load data
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
@@ -41,15 +38,12 @@ head(divorce)
 ```
 
 ```{r, echo=FALSE}
-# THIS BLOCK WILL NOT BE IN THE PDF FILE, REMEMBER TO GIVE CREDIT
-
 # Define the neatPrint function, makes for nicer output in Rmarkdown
 neatPrint <- function(listOfStrings){
   cat(listOfStrings, fill = 1)
 }
 
-# Define the ggsurv function
-
+# Define the ggsurv function, credit and link are below
 ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
                    cens.col = 'red', lty.est = 1, lty.ci = 2,
                    cens.shape = 3, back.white = F, xlab = 'Time',
@@ -186,7 +180,7 @@ ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
 ### 3) The KM estimates for mixed and non-mixed couples
 ### 4) The KM estimates for couples with and without a black husband
 
-# GGSURV : This is like plot.surv but makes plot look much nicer
+Note that ggsurv() is a function dependent on the ggplot2 library and made for plotting survival curves. Credit to Tal Galili's [source code](https://www.r-statistics.com/2013/07/creating-good-looking-survival-curves-the-ggsurv-function/). 
 ```{r}
 divorcefit <- Surv(time = divorce$years, event = divorce$div)
 divorceKM <- survfit(divorcefit ~ 1)
@@ -194,60 +188,72 @@ educateKM <- survfit(divorcefit ~ divorce$edu)
 mixedKM <- survfit(divorcefit ~ divorce$mixed)
 hblackKM <- survfit(divorcefit ~ divorce$hblack)
 
-a <- ggsurv(divorceKM) +
+a <- ggsurv(divorceKM,) +
   ggtitle("Baseline Model") +
   ylab("Survival Probability") +
-  xlab("Time in Years")
+  xlab("Time in Years") + ylab("Probability")
 
 b <- ggsurv(educateKM, plot.cens = F) +
   ggtitle("Estimates by Education Level") +
   ylab("Survival Probability") +
-  xlab("Time in Years")
+  xlab("Time in Years") +
+  theme(legend.title = element_blank()) + ylab("Probability")
 
 c <- ggsurv(mixedKM, plot.cens = F) +
   ggtitle("Estimates for Mixed \n and Non-Mixed Couples") +
   ylab("Survival Probability") +
-  xlab("Time in Years")
+  xlab("Time in Years") +
+  labs(fill = "") +
+  theme(legend.title = element_blank()) + ylab("Probability")
 
 d <- ggsurv(hblackKM, plot.cens = F) +
   ggtitle("Estimates for Black \n and Non-Black Husbands") +
   ylab("Survival Probability") +
-  xlab("Time in Years")
+  xlab("Time in Years") +
+  theme(legend.title = element_blank()) + ylab("Probability")
 
-plot_grid(a,b,c,d, nrow = 2, ncol = 2)
+plot_grid(a,b,c,d, nrow = 2, ncol = 2, label_size = 10, align = "hv")
 ```
 
+The plot by education level is especially interesting. Couples with a husband attaining a highschool diploma or graduate degree have lower divorce probabilities than couples with a husband attaining a bachelor's degree.
+
 # Cox Proportional Hazards Model
+A single Cox Proportional Hazards model test.
 ```{r, echo = FALSE}
-logRank1 <- coxph(divorcefit ~ 1)
+logRank1 <- coxph(divorcefit ~ divorce$hblack)
 summary(logRank1)
 ```
 
-# Furthur Exploratory Analysis
+# Naive Exploratory Analysis
 ```{r}
-ggplot(divorce) +
+a <- ggplot(divorce) +
   geom_boxplot(mapping = aes(x = as.factor(edu), y = years, 
-                             group = edu, fill = as.factor(edu)))
-ggplot(divorce) +
+                             group = edu, fill = as.factor(edu))) +
+  theme(legend.title = element_blank()) +
+  ggtitle("Marriage Length \n by Education Level")
+
+b <- ggplot(divorce) +
   geom_boxplot(mapping = aes(x = as.factor(hblack), y = years,
-                             group = hblack, fill = as.factor(hblack)))
+                             group = hblack, fill = as.factor(hblack))) +
+  theme(legend.title = element_blank()) +
+  ggtitle("Marriage Length \n by Husband's Race")
+
+plot_grid(a,b, align = "h", nrow = 1, ncol = 2)
 ```
+Above plots include both censored and non-censored observations.
 
 ```{r, echo = FALSE}
 Ncensored <- sum( divorce$div == 0 )
 Ndiv <- nrow(divorce) - Ncensored
 
+education <- table(divorce$edu)
+
 a <- paste("Number of censored observations =", Ncensored)
 b <- paste("Number of observed divorces =", Ndiv)
 
-neatPrint(c(a,b))
+c <- paste("Males with highschool as highest education =", education[1])
+d <- paste("Males with bachelor's as highest education =", education[2])
+e <- paste("Males with graduate degree as highest education =", education[3])
+
+neatPrint(c(a,b,c,d,e))
 ```
-<<<<<<< HEAD
-
-
-
-
-
-check 1 2!
-=======
->>>>>>> origin/master
