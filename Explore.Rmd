@@ -1,0 +1,49 @@
+---
+title: "Explore"
+author: "Alex Brown"
+date: "November 4, 2016"
+output: pdf_document
+---
+## Introduction
+## Methodology
+## Exploratory Analysis
+Load data and print head
+```{r, message=FALSE}
+library(ggplot2)
+library(survival)
+library(cowplot)
+
+# Load data
+colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
+divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
+head(divorce)
+```
+
+```{r}
+a <- ggplot(divorce) + 
+  geom_density(mapping = (aes(x=years, fill = as.factor(div), group = div)), alpha = .5)+
+  ggtitle("Distribution of Censored and\n Non-Censored Observations")+
+  theme(legend.title = element_blank())
+
+# Get proportions of mixed couples in each education bracket
+edu_counts <- as.data.frame.matrix(table(divorce$edu, divorce$mixed))
+names(edu_counts) = c("no_mix", "mixed")
+row.names(edu_counts) = c("HS", "BA", "MA")
+
+mixed_HS = round( (edu_counts$mixed[1] / sum(edu_counts[1,])), 2)
+mixed_BA = round( (edu_counts$mixed[2] / sum(edu_counts[2,])), 2)
+mixed_MA = round( (edu_counts$mixed[3] / sum(edu_counts[3,])), 2)
+proportions = c(mixed_HS, mixed_BA, mixed_MA)
+
+# lift up the percentages?
+b <- ggplot(divorce)+
+  geom_bar(mapping = aes(x=edu, fill = as.factor(hblack))) +
+  geom_text(mapping = aes(x=edu), label = proportions, stat="count") +
+  theme(legend.title = element_blank())
+
+plot_grid(a,b)
+```
+
+-- explain!!!  ---
+
+
