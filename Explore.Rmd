@@ -29,6 +29,10 @@ The following plots explore the distributions of our covariates.
 library(ggplot2)
 library(survival)
 library(cowplot)
+library(devtools)
+library(ggkm)
+devtools::install_github("sachsmc/ggkm")
+#https://github.com/sachsmc/ggkm
 
 # Load data
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
@@ -245,11 +249,31 @@ Plot analysis clockwise from top left.
 
 **Top Left** Thanks to the large number of observations, our KM estimate is nearly a smooth line.
 
-**Top Right** This plot is especially interesting, as one would expect there to be a linear relationship between the education levels and the respective hazard rates... for example, $S_{1}(X) < S_{2}(X) < S_{3}(X)$ (where $S_{i}$ denotes the survival function of the ith education level). Interestingly, we do not see this trend. The survival rates of couples with a college-educated husband are visibly lower than that of couples with either a high-school educated or gradute-educated husband.
+**Top Right** This plot is especially interesting, as one would expect there to be a linear relationship between the education levels and the respective hazard rates... for example, $S_{1}(X) < S_{2}(X) < S_{3}(X)$ (where $S_{i}$ denotes the survival function of the ith education level). Interestingly, we do not see this trend. The survival rates of couples with a college-educated husband are visibly lower than that of couples with either a high-school educated or graduate-educated husband.
 
 **Bottom Right** 
 
 **Bottom Left** Non-mixed couples are likely to survive longer, shown by their higher survival function and that their observations carried on longer into the study.
+##Checking Proportional Hazard Assumptions
+```{r}
+b <- ggsurv(educateKM, plot.cens = F) + 
+  ggtitle("Estimates by Education Level") + 
+  ylab("Survival Probability") +
+  xlab("Time in Years") +
+  theme(legend.title = element_blank()) + ylab("Probability")
+
+blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(edu)))  +
+  geom_km(trans = "cloglog") + 
+  geom_kmticks(trans = "cloglog") + 
+  geom_kmband(trans = "cloglog") + 
+  ylab("Complementary Log-Log") + 
+  scale_x_log10()
+
+ggplot(divorce)  +
+  geom_km(mapping = aes(time = years, status = div))
+
+plot(b)
+```
 
 ## Modeling
 
