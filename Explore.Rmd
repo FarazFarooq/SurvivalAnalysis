@@ -37,6 +37,19 @@ head(divorce)
 ```
 
 ```{r, echo = FALSE}
+# Function to make the wife's race
+femalecol <- function(dataframe){
+  dataframe$wblack <- as.factor(
+    
+    ifelse(dataframe$hblack == dataframe$mixed & dataframe$hblack == 1, 0, 
+           ifelse(dataframe$hblack == 1 & dataframe$mixed == 0, 1,
+                  ifelse(dataframe$hblack == 0 & dataframe$mixed == 1, 1, 0)))
+  
+    )
+  
+  return(dataframe)
+}
+divorce <- femalecol(divorce)
 # Define the neatPrint function, makes for nicer output in Rmarkdown
 neatPrint <- function(listOfStrings){
   cat(listOfStrings, fill = 1)
