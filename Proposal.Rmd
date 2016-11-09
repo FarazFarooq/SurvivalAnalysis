@@ -188,7 +188,7 @@ educateKM <- survfit(divorcefit ~ divorce$edu)
 mixedKM <- survfit(divorcefit ~ divorce$mixed)
 hblackKM <- survfit(divorcefit ~ divorce$hblack)
 
-a <- ggsurv(divorceKM,) +
+a <- ggsurv(divorceKM) +
   ggtitle("Baseline Model") +
   ylab("Survival Probability") +
   xlab("Time in Years") + ylab("Probability")
@@ -204,7 +204,8 @@ c <- ggsurv(mixedKM, plot.cens = F) +
   ylab("Survival Probability") +
   xlab("Time in Years") +
   labs(fill = "") +
-  theme(legend.title = element_blank()) + ylab("Probability")
+  theme(legend.title = element_blank()) + 
+  ylab("Probability")
 
 d <- ggsurv(hblackKM, plot.cens = F) +
   ggtitle("Estimates for Black \n and Non-Black Husbands") +
