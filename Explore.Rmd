@@ -269,23 +269,33 @@ Plot analysis clockwise from top left.
 **Bottom Left** Non-mixed couples are likely to survive longer, shown by their higher survival function and that their observations carried on longer into the study.
 ##Checking Proportional Hazard Assumptions
 ```{r}
-b <- ggsurv(educateKM, plot.cens = F) + 
-  ggtitle("Estimates by Education Level") + 
-  ylab("Survival Probability") +
-  xlab("Time in Years") +
-  theme(legend.title = element_blank()) + ylab("Probability")
 
 blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(edu)))  +
   geom_km(trans = "cloglog") + 
-  geom_kmticks(trans = "cloglog") + 
-  geom_kmband(trans = "cloglog") + 
   ylab("Complementary Log-Log") + 
-  scale_x_log10()
+  ggtitle("Log-Log curve for Education level") +
+  scale_x_log10() +
+  theme(legend.title = element_blank())
+#x-axis add marks?
 
-ggplot(divorce)  +
-  geom_km(mapping = aes(time = years, status = div))
 
-plot(b)
+clog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(mixed)))  +
+  geom_km(trans = "cloglog") + 
+  ylab("Complementary Log-Log") + 
+  ggtitle("Log-Log curve for Mixed \n Non-Mixed Couples") +
+  scale_x_log10() +
+  theme(legend.title = element_blank())
+ 
+
+dlog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(hblack)))  +
+  geom_km(trans = "cloglog") + 
+  ylab("Complementary Log-Log") + 
+  ggtitle("Log-Log curve for Black \n Non-Black Husbands") +
+  scale_x_log10() +
+  theme(legend.title = element_blank())
+ 
+# do we want a larger x-axis? 
+plot_grid(blog,clog,dlog, nrow = 2, ncol = 2, label_size = 10)
 ```
 
 ## Modeling
