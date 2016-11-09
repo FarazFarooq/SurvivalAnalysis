@@ -3,26 +3,32 @@ title: "Modeling"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r }
+colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
+divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
+head(divorce)
 ```
+```{r }
+divorce$edu <- as.factor(divorce$edu)
+divorce$hblack <- as.factor(divorce$hblack)
+divorce$mixed <- as.factor(divorce$mixed)
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#Individual predictor Models in increasing order of significance
+edu_coxph <- coxph(Surv(years,div)~edu , data=divorce)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+mixed_coxph <- coxph(Surv(years,div)~mixed , data=divorce)
 
-```{r cars}
-summary(cars)
+hblack <- coxph(Surv(years,div)~hblack , data=divorce)
+
+#Larger Models (In Increasing Significance order)
+eh_coxph <- coxph(Surv(years,div)~edu+hblack , data=divorce)
+em_coxph <- coxph(Surv(years,div)~edu+mixed , data=divorce)
+emb_coxph <- coxph(Surv(years,div)~edu+mixed+hblack , data=divorce)
+
+
+#using cox.zph to test which predictors satisfy ph Assumption In order #make a stratified model
+ph_test <- cox.zph(emb_coxph)
+plot(ph_test)
+
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
