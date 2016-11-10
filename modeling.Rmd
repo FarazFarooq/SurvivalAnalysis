@@ -2,18 +2,26 @@
 title: "Modeling"
 output: pdf_document
 ---
-
+# Reading in Data
 ```{r }
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
 divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
 head(divorce)
+library(survival)
+library(survminer)
+library(ggplot2)
 ```
+
+#Setting predictors as factors
 ```{r }
 divorce$edu <- as.factor(divorce$edu)
 divorce$hblack <- as.factor(divorce$hblack)
 divorce$mixed <- as.factor(divorce$mixed)
+```
 
+#Initial Modeling
 
+```{r }
 #Individual predictor Models in increasing order of significance
 edu_coxph <- coxph(Surv(years,div)~edu , data=divorce)
 
@@ -21,14 +29,65 @@ mixed_coxph <- coxph(Surv(years,div)~mixed , data=divorce)
 
 hblack <- coxph(Surv(years,div)~hblack , data=divorce)
 
-#Larger Models (In Increasing Significance order)
+```
+
+#Larger Models 
+## Using ggcoxzph function from survminer package to plot the schoenfeld residuals and 
+scale the y-axis so it can be consistent for each predictor
+
+```{r , message=FALSE}
 eh_coxph <- coxph(Surv(years,div)~edu+hblack , data=divorce)
+eh_coxph
 em_coxph <- coxph(Surv(years,div)~edu+mixed , data=divorce)
+em_coxph
 emb_coxph <- coxph(Surv(years,div)~edu+mixed+hblack , data=divorce)
+emb_coxph
 
 
 #using cox.zph to test which predictors satisfy ph Assumption In order #make a stratified model
 ph_test <- cox.zph(emb_coxph)
-plot(ph_test)
+ph_test
+
+#Plots for non-stratified model
+sch_plots1 <- ggcoxzph(fit=ph_test)
+scale <-   scale_y_continuous(limits=c(-10,10))
+
+edu1_plot <- sch_plots1$edu1 + scale
+edu1_plot
+
+edu2_plot<- sch_plots1$edu2  + scale
+edu2_plot
+
+
+mixed1_plot <- sch_plots1$mixed1  + scale
+mixed1_plot
+
+hblack_plot <- sch_plots1$hblack1 +scale
+hblack_plot
+```
+# Stratfying hblack predictor (Decision made from ph_test model) and plotting schoenfeld plots
+```{r }
+
+emb_stratified <- coxph(Surv(years,div)~edu+mixed+strata(hblack),data=divorce)
+emb_stratified
+ph_test2 <- cox.zph(emb_stratified)
+ph_test2
+```
+
+
+```{r ,message=FALSE}
+#Plots for stratified model
+sch_plots2 <- ggcoxzph(fit=ph_test2)
+scale <-   scale_y_continuous(limits=c(-10,10))
+edu1_plot <- sch_plots2$edu1 + scale
+edu1_plot
+
+edu2_plot <- sch_plots2$edu2  + scale
+edu2_plot
+
+mixed1_plot <- sch_plots$mixed1  + scale
+mixed1_plot
 
 ```
+
+
