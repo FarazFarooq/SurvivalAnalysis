@@ -31,8 +31,10 @@ library(survival)
 library(cowplot)
 library(devtools)
 library(ggkm)
-devtools::install_github("sachsmc/ggkm")
-#https://github.com/sachsmc/ggkm
+
+# Uncomment and 
+# devtools::install_github("sachsmc/ggkm")
+# https://github.com/sachsmc/ggkm
 
 # Load data
 colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
@@ -41,6 +43,10 @@ head(divorce)
 ```
 
 ```{r, echo = FALSE}
+divorce$edu <- as.factor(divorce$edu)
+divorce$hblack <- as.factor(divorce$hblack)
+divorce$mixed <- as.factor(divorce$mixed)
+
 # Function to make the wife's race
 femalecol <- function(dataframe){
   dataframe$wblack <- as.factor(
@@ -267,36 +273,66 @@ Plot analysis clockwise from top left.
 **Bottom Right** 
 
 **Bottom Left** Non-mixed couples are likely to survive longer, shown by their higher survival function and that their observations carried on longer into the study.
-##Checking Proportional Hazard Assumptions
-```{r}
+
+## Checking Proportional Hazard Assumptions 
+
+```{r, echo = FALSE}
+# Make more ticks marks on the X axis
 
 blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(edu)))  +
   geom_km(trans = "cloglog") + 
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Education level") +
+  ylab("Y") +
   scale_x_log10() +
   theme(legend.title = element_blank())
-#x-axis add marks?
-
 
 clog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(mixed)))  +
   geom_km(trans = "cloglog") + 
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Mixed \n Non-Mixed Couples") +
+  ylab("Y") +
   scale_x_log10() +
   theme(legend.title = element_blank())
  
-
 dlog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(hblack)))  +
   geom_km(trans = "cloglog") + 
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Black \n Non-Black Husbands") +
+  ylab("Y") +
   scale_x_log10() +
   theme(legend.title = element_blank())
- 
-# do we want a larger x-axis? 
-plot_grid(blog,clog,dlog, nrow = 2, ncol = 2, label_size = 10)
+
+plot_grid(blog, clog, dlog, nrow = 2, ncol = 2, label_size = 10)
 ```
+
+The clog-log plots above help us check our proportional hazards assumption graphically. Though it is difficult to infer any violations from the plots, the bottom left plot is especially concerning.
+
+```{r, echo = FALSE}
+divorce$edu <- as.factor(divorce$edu)
+divorce$hblack <- as.factor(divorce$hblack)
+divorce$mixed <- as.factor(divorce$mixed)
+
+# Individual predictor Models in increasing order of significance
+edu_coxph <- coxph(Surv(years, div) ~ edu, data=divorce)
+mixed_coxph <- coxph(Surv(years, div) ~ mixed, data=divorce)
+hblack_coxph <- coxph(Surv(years, div) ~ hblack, data=divorce)
+
+eh_coxph <- coxph(Surv(years,div)~edu+hblack , data=divorce)
+em_coxph <- coxph(Surv(years,div)~edu+mixed , data=divorce)
+emb_coxph <- coxph(Surv(years,div)~edu+mixed+hblack , data=divorce)
+# GLOBAL is tst for whole model's proportionality
+```
+
+```{r}
+emb_coxph <- coxph(Surv(years, div) ~ edu + mixed + hblack, data=divorce)
+test <- cox.zph(emb_coxph)
+```
+
+Looking at the data, we are concerned with the log-log graph for Black and Non-Black husbands. We can confirm that our column hblack1 violates the proportionality assumption. 
+
+elaborate small p-values, baseline hazard rate is only dependent on time? 
+
 
 ## Modeling
 
