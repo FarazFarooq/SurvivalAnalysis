@@ -64,12 +64,13 @@ emb_coxph
 #The wblack p-valus is way higher than .05 
 embw_coxph <- coxph(Surv(years,div)~edu+mixed+hblack+wblack, data=divorce)
 embw_coxph
-
+# as we see the hblack1 model with the p-value of 0.0300 still violates the pH assumption even after adding the information about the wife. This lines up with what we would expect by adding another predictor, it would be insignificant which is why we did not see a change in the hblack1. In a sense it did not make a difference. 
 #using cox.zph to test which predictors satisfy ph Assumption In order #make a stratified model
 ph_test1 <- cox.zph(emb_coxph)
 ph_test1
 
 #Plots for non-stratified model
+#when we plot schoenfeld residuals with a non-stratified model, we see the only non-significant model is the hblack, since the p value is <0.05. Thus this predictor violates the proportional hazards assumption. This gave us the ideea to use a stratified model and check the plots. 
 sch_plots1 <- ggcoxzph(fit=ph_test1)
 scale <-   scale_y_continuous(limits=c(-10,10))
 
@@ -89,18 +90,20 @@ hblack_plot
 
 #cox.zph from model that adds wblack column
 ```{r }
-#wblack predictor violates the ph assumption
+#wblack predictor violates the ph assumption showing it is insignificant as we explained above. 
 ph_test_wb <- cox.zph(embw_coxph)
 ph_test_wb
 ```
 
 # Stratfying hblack predictor (Decision made from ph_test1 model) and plotting schoenfeld plots
+
 ```{r }
 
 emb_stratified <- coxph(Surv(years,div)~edu+mixed+strata(hblack),data=divorce)
 emb_stratified
 ph_test2 <- cox.zph(emb_stratified)
 ph_test2
+#Stratifying the model did not help despite the fact we thought the hblack 1 would make it a better model, the significance of the other 3 predictors do not change. 
 ```
 
 
