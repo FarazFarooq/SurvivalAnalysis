@@ -11,6 +11,21 @@ library(survival)
 library(survminer)
 library(ggplot2)
 ```
+# Function to make the wife's race (Added new column predictor for wife's race)
+```{r }
+femalecol <- function(dataframe){
+  dataframe$wblack <- as.factor(
+    
+    ifelse(dataframe$hblack == dataframe$mixed & dataframe$hblack == 1, 0, 
+           ifelse(dataframe$hblack == 1 & dataframe$mixed == 0, 1,
+                  ifelse(dataframe$hblack == 0 & dataframe$mixed == 1, 1, 0)))
+  
+    )
+  
+  return(dataframe)
+}
+divorce <- femalecol(divorce)
+```
 
 #Setting predictors as factors
 ```{r }
@@ -29,27 +44,33 @@ mixed_coxph <- coxph(Surv(years,div)~mixed , data=divorce)
 
 hblack <- coxph(Surv(years,div)~hblack , data=divorce)
 
+#p-value > .05 so not a good predictor to add to our model
+wblack <- coxph(Surv(years,div)~wblack, data=divorce)
 ```
 
 #Larger Models 
-## Using ggcoxzph function from survminer package to plot the schoenfeld residuals and 
-scale the y-axis so it can be consistent for each predictor
+## Using ggcoxzph function from survminer package to plot the schoenfeld residuals and scale the y-axis so it can be consistent for each predictor
 
 ```{r , message=FALSE}
 eh_coxph <- coxph(Surv(years,div)~edu+hblack , data=divorce)
 eh_coxph
+
 em_coxph <- coxph(Surv(years,div)~edu+mixed , data=divorce)
 em_coxph
+
 emb_coxph <- coxph(Surv(years,div)~edu+mixed+hblack , data=divorce)
 emb_coxph
 
+#The wblack p-valus is way higher than .05 
+embw_coxph <- coxph(Surv(years,div)~edu+mixed+hblack+wblack, data=divorce)
+embw_coxph
 
 #using cox.zph to test which predictors satisfy ph Assumption In order #make a stratified model
-ph_test <- cox.zph(emb_coxph)
-ph_test
+ph_test1 <- cox.zph(emb_coxph)
+ph_test1
 
 #Plots for non-stratified model
-sch_plots1 <- ggcoxzph(fit=ph_test)
+sch_plots1 <- ggcoxzph(fit=ph_test1)
 scale <-   scale_y_continuous(limits=c(-10,10))
 
 edu1_plot <- sch_plots1$edu1 + scale
@@ -65,7 +86,15 @@ mixed1_plot
 hblack_plot <- sch_plots1$hblack1 +scale
 hblack_plot
 ```
-# Stratfying hblack predictor (Decision made from ph_test model) and plotting schoenfeld plots
+
+#cox.zph from model that adds wblack column
+```{r }
+#wblack predictor violates the ph assumption
+ph_test_wb <- cox.zph(embw_coxph)
+ph_test_wb
+```
+
+# Stratfying hblack predictor (Decision made from ph_test1 model) and plotting schoenfeld plots
 ```{r }
 
 emb_stratified <- coxph(Surv(years,div)~edu+mixed+strata(hblack),data=divorce)
