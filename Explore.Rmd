@@ -1,6 +1,6 @@
 ---
 title: "Exploratory Analysis"
-author: "Alex Brown"
+author: "Alex Brown,David Geyfman, Jason Freeberg, Faraz Farooq"
 date: "November 4, 2016"
 output: pdf_document
 ---
@@ -17,15 +17,22 @@ Our dataset comes from a longitudinal study conducted in the United States. Rese
   - Whether or not both partners are black, coded as...
       - 1 if both partners are **not** black
       - 0 if one parter is not black, and the other is
+      
+## Research question
+
+Our team wanted to see how education affected time until divorce while controlling for 
+the races of the couples. 
 
 ## Methodology
 
-Our team decided to build our model bottom-up, meaning we fit single.... ababasdhashdaabs
+Our team decided to build our model bottom-up, meaning we fit a single covariate initially and added additional significant covariates.
 
 ## Exploratory Analysis of Covariates
+
 The following plots explore the distributions of our covariates.
 
 ```{r, message=FALSE}
+#loading necessary libraries
 library(ggplot2)
 library(survival)
 library(cowplot)
@@ -41,6 +48,8 @@ colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
 divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
 head(divorce)
 ```
+We turn the covariates into factors so we can group the covariate values as categories.
+In order to focus on education we wanted to treat race as a controlled variable, instead of having two covariates involving race, we made a new column that fully encodes the couple's racial makeup. 
 
 ```{r, echo = FALSE}
 divorce$edu <- as.factor(divorce$edu)
@@ -59,7 +68,26 @@ femalecol <- function(dataframe){
   
   return(dataframe)
 }
+
+# Encode column
+couple_column <- function(dataframe){
+  # Encodes couple's race into one column
+  # Husband's race first, then wife's race
+  # BB => Black and Black
+  # BO => Black and Other
+  # OB => Other and Black
+  # OO => Other and Other
+  
+  dataframe$couple <- as.factor(
+    ifelse(dataframe$hblack == 1 & dataframe$wblack == 1, "BB", 
+           ifelse(dataframe$hblack == 1 & dataframe$wblack == 0, "BO", 
+                  ifelse(dataframe$hblack == 0 & dataframe$wblack == 1, "OB", "OO")))
+  )
+  return(dataframe)
+}
+
 divorce <- femalecol(divorce)
+divorce <- couple_column(divorce)
 # Define the neatPrint function, makes for nicer output in Rmarkdown
 neatPrint <- function(listOfStrings){
   cat(listOfStrings, fill = 1)
@@ -193,6 +221,7 @@ ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
 }
 ```
 
+
 ```{r, echo=FALSE, message = FALSE}
 a <- ggplot(divorce) + 
   geom_density(mapping = (aes(x=years, fill = as.factor(div), group = div)), alpha = .5)+
@@ -234,8 +263,7 @@ plot_grid(a,b)
 divorcefit <- Surv(time = divorce$years, event = divorce$div)
 divorceKM <- survfit(divorcefit ~ 1)
 educateKM <- survfit(divorcefit ~ divorce$edu)
-mixedKM <- survfit(divorcefit ~ divorce$mixed)
-hblackKM <- survfit(divorcefit ~ divorce$hblack)
+
 
 a <- ggsurv(divorceKM, plot.cens = F) +
   ggtitle("Baseline Model") +
@@ -247,22 +275,11 @@ b <- ggsurv(educateKM, plot.cens = F) +
   ylab("Survival Probability") +
   xlab("Time in Years") +
   theme(legend.title = element_blank()) + ylab("Probability")
+c <- NULL
 
-c <- ggsurv(mixedKM, plot.cens = F) +
-  ggtitle("Estimates for Mixed \n and Non-Mixed Couples") +
-  ylab("Survival Probability") +
-  xlab("Time in Years") +
-  labs(fill = "") +
-  theme(legend.title = element_blank()) + 
-  ylab("Probability")
 
-d <- ggsurv(hblackKM, plot.cens = F) +
-  ggtitle("Estimates for Black \n and Non-Black Husbands") +
-  ylab("Survival Probability") +
-  xlab("Time in Years") +
-  theme(legend.title = element_blank()) + ylab("Probability")
 
-plot_grid(a,b,c,d, nrow = 2, ncol = 2, label_size = 10)
+plot_grid(a,b,c, nrow = 2, ncol = 2, label_size = 10)
 ```
 Plot analysis clockwise from top left.
 
@@ -274,12 +291,37 @@ Plot analysis clockwise from top left.
 
 **Bottom Left** Non-mixed couples are likely to survive longer, shown by their higher survival function and that their observations carried on longer into the study.
 
-## Checking Proportional Hazard Assumptions 
+## Modeling
+
+Here we fit our base model using only the covariate encoding the husband's education level.
 
 ```{r, echo = FALSE}
-# Make more ticks marks on the X axis
+# Base model using only education
+edu_coxph <- coxph(Surv(years, div) ~ edu, data=divorce)
 
-blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(edu)))  +
+# Summary output on base model
+summary(edu_coxph)
+```
+
+Our base model is significant ..... 
+**YAY, ELABORATE ON OUTPUT HERE**
+
+## Controling for Racial Makeup
+
+```{r}
+edu_race_coxph <- coxph(Surv(years, div) ~ edu + couple, data = divorce)
+
+summary(edu_race_coxph)
+```
+
+Elaborate on the P-values of the education factors, note that the whole model is still significant.
+
+## Checking Proportional Hazard Assumptions 
+
+### Graphical Approach
+```{r, echo = FALSE, message = FALSE}
+# Make more ticks marks on the X axis
+blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
   geom_km(trans = "cloglog") + 
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Education level") +
@@ -287,55 +329,36 @@ blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor
   scale_x_log10() +
   theme(legend.title = element_blank())
 
-clog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(mixed)))  +
-  geom_km(trans = "cloglog") + 
-  ylab("Complementary Log-Log") + 
-  ggtitle("Log-Log curve for Mixed \n Non-Mixed Couples") +
-  ylab("Y") +
-  scale_x_log10() +
-  theme(legend.title = element_blank())
- 
-dlog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(hblack)))  +
-  geom_km(trans = "cloglog") + 
-  ylab("Complementary Log-Log") + 
-  ggtitle("Log-Log curve for Black \n Non-Black Husbands") +
-  ylab("Y") +
-  scale_x_log10() +
-  theme(legend.title = element_blank())
+#####
+# clog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(mixed)))  +
+#   geom_km(trans = "cloglog") + 
+#   ylab("Complementary Log-Log") + 
+#   ggtitle("Log-Log curve for Mixed \n Non-Mixed Couples") +
+#   ylab("Y") +
+#   scale_x_log10() +
+#   theme(legend.title = element_blank())
+#  
+# dlog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(hblack)))  +
+#   geom_km(trans = "cloglog") + 
+#   ylab("Complementary Log-Log") + 
+#   ggtitle("Log-Log curve for Black \n Non-Black Husbands") +
+#   ylab("Y") +
+#   scale_x_log10() +
+#   theme(legend.title = element_blank())
+#####
+#plot_grid(blog, clog,nrow = 2, ncol = 2, label_size = 10)
+blog
 
-plot_grid(blog, clog, dlog, nrow = 2, ncol = 2, label_size = 10)
+edu_zph <- cox.zph(edu_coxph)
+plot(edu_zph)
 ```
 
-The clog-log plots above help us check our proportional hazards assumption graphically. Though it is difficult to infer any violations from the plots, the bottom left plot is especially concerning.
+The plot **is** concerning because some of the lines intersect.
 
-```{r, echo = FALSE}
-divorce$edu <- as.factor(divorce$edu)
-divorce$hblack <- as.factor(divorce$hblack)
-divorce$mixed <- as.factor(divorce$mixed)
+.... ANALYSE THE SCATTERPLOT OF SCHOENFELD RESIDUALScix
 
-# Individual predictor Models in increasing order of significance
-edu_coxph <- coxph(Surv(years, div) ~ edu, data=divorce)
-mixed_coxph <- coxph(Surv(years, div) ~ mixed, data=divorce)
-hblack_coxph <- coxph(Surv(years, div) ~ hblack, data=divorce)
-
-eh_coxph <- coxph(Surv(years,div)~edu+hblack , data=divorce)
-em_coxph <- coxph(Surv(years,div)~edu+mixed , data=divorce)
-emb_coxph <- coxph(Surv(years,div)~edu+mixed+hblack , data=divorce)
-# GLOBAL is tst for whole model's proportionality
-```
-
+# Numerical Approach
 ```{r}
-emb_coxph <- coxph(Surv(years, div) ~ edu + mixed + hblack, data=divorce)
-test <- cox.zph(emb_coxph)
+summary(edu_zph)
 ```
 
-Looking at the data, we are concerned with the log-log graph for Black and Non-Black husbands. We can confirm that our column hblack1 violates the proportionality assumption. 
-
-elaborate small p-values, baseline hazard rate is only dependent on time? 
-
-
-## Modeling
-
-... Merge with Modeling.Rmd here ...
-
-End.
