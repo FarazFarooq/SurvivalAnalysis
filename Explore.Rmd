@@ -39,6 +39,7 @@ library(cowplot)
 library(devtools)
 library(ggkm)
 
+
 # Uncomment and 
 # devtools::install_github("sachsmc/ggkm")
 # https://github.com/sachsmc/ggkm
@@ -293,35 +294,73 @@ Plot analysis clockwise from top left.
 
 ## Modeling
 
-Here we fit our base model using only the covariate encoding the husband's education level.
 
-```{r, echo = FALSE}
-# Base model using only education
-edu_coxph <- coxph(Surv(years, div) ~ edu, data=divorce)
+```{r}
+edu_coxph <- coxph(Surv(years, div) ~ edu, data = divorce)
 
-# Summary output on base model
-summary(edu_coxph)
+edu_coxph
 ```
 
 Our base model is significant ..... 
-**YAY, ELABORATE ON OUTPUT HERE**
 
-## Controling for Racial Makeup
+## Control for Racial Makeup
+
+Add racial covariates to model with education, and make sure education is a significant predictor in all.
 
 ```{r}
-edu_race_coxph <- coxph(Surv(years, div) ~ edu + couple, data = divorce)
+eh_coxph <- coxph(Surv(years,div) ~ edu + hblack, data=divorce)
+em_coxph <- coxph(Surv(years,div) ~ edu + mixed, data=divorce)
+emb_coxph <- coxph(Surv(years,div) ~ edu + mixed + hblack , data=divorce)
+embw_coxph <- coxph(Surv(years,div) ~ edu + mixed + hblack + wblack, data=divorce)
 
-summary(edu_race_coxph)
+eh_coxph
+em_coxph
+emb_coxph
+embw_coxph
 ```
 
-Elaborate on the P-values of the education factors, note that the whole model is still significant.
+Now that we know education is a significant predictor even when controlled for racial makeup, we will find the best model from the ones above.
+
+## Effect of Racial Makeup
+
+```{r}
+BIC(edu_coxph)
+BIC(eh_coxph)
+BIC(em_coxph)
+BIC(emb_coxph)
+BIC(embw_coxph)
+
+edu_couple_coxph <- coxph(Surv(years, div) ~ edu + couple, data = divorce)
+BIC(edu_couple_coxph)
+
+# Make this shit print better
+```
+
+Although the BIC on the model using education and mixed couple was the lowest, we decided to continue our analysis using a new variable, "couple" which encodes all the racial makeups into one predictor. Below, we test the difference between the two to ensure there is no statistical difference.
+
+We are testing to see if there is a significant difference between the model using the newly encoded predictor, and the model containing the individual predictors being encoded.
+
+```{r}
+chi_test <- 2*(edu_couple_coxph$loglik[[2]] - em_coxph$loglik[[2]])
+
+# 5 parameters in the bigger model (lots of factor levels)
+# 3 parameters in the restricted model
+1 - pchisq(chi_test, df = 5-3)
+```
+
+The P-value is 0.075, which is above any common significance level. Therefore, there is no significant difference between the two models using...
+
+  - Education + Couple
+  - Education + Mixed
+
+This allows us to use a more condensed predictor for interaction terms later. Lastly, it is interesting to note that the model using Education + Mixed + Hblack + Wblack is in fact the same model as Education + Couple.
 
 ## Checking Proportional Hazard Assumptions 
 
 ### Graphical Approach
 ```{r, echo = FALSE, message = FALSE}
 # Make more ticks marks on the X axis
-blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
+a <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
   geom_km(trans = "cloglog") + 
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Education level") +
@@ -329,36 +368,35 @@ blog <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) 
   scale_x_log10() +
   theme(legend.title = element_blank())
 
-#####
-# clog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(mixed)))  +
-#   geom_km(trans = "cloglog") + 
-#   ylab("Complementary Log-Log") + 
-#   ggtitle("Log-Log curve for Mixed \n Non-Mixed Couples") +
-#   ylab("Y") +
-#   scale_x_log10() +
-#   theme(legend.title = element_blank())
-#  
-# dlog <- ggplot(divorce, mapping = aes(time = years, status = div, color = factor(hblack)))  +
-#   geom_km(trans = "cloglog") + 
-#   ylab("Complementary Log-Log") + 
-#   ggtitle("Log-Log curve for Black \n Non-Black Husbands") +
-#   ylab("Y") +
-#   scale_x_log10() +
-#   theme(legend.title = element_blank())
-#####
-#plot_grid(blog, clog,nrow = 2, ncol = 2, label_size = 10)
-blog
+b <- ggplot(divorce, mapping = aes(time = years, status = div, color = couple)) +
+  geom_km(trans = "cloglog") +
+  ylab("Complementary Log-Log") + 
+  ggtitle("Log-Log curve for Couple Makeup") +
+  ylab("Y") +
+  scale_x_log10() +
+  theme(legend.title = element_blank())
 
-edu_zph <- cox.zph(edu_coxph)
-plot(edu_zph)
+plot_grid(a,b)
 ```
 
-The plot **is** concerning because some of the lines intersect.
+**Left** The intersecting lines are concerning, so we will investigate the necessity of a time-transformation on education.
 
-.... ANALYSE THE SCATTERPLOT OF SCHOENFELD RESIDUALScix
+**Right** Again, the intersecting lines are concerning. In this case, however, we will investigate the necesity of stratifying the racial makeup predictor.
 
-# Numerical Approach
+### Numerical Approach
 ```{r}
-summary(edu_zph)
+edu_zph <- cox.zph(edu_coxph)
+edu_couple_zph <- cox.zph(edu_couple_coxph)
+
+edu_zph
+edu_couple_zph
 ```
+
+While our numerical test indicates that education does **not** violate the proportional hazards assumption, we will still investigate the improvement of adding a time-transformation
+
+The numerical test for racial makeup of the couple confirms the suspicions from the c-log-log plot. The predictor does violate the proportional hazards assumption and we will then use it as a stratified variable.
+
+## Time Transform
+
+## Stratification
 
