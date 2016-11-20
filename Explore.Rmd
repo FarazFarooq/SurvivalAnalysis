@@ -297,7 +297,6 @@ Plot analysis clockwise from top left.
 
 ```{r}
 edu_coxph <- coxph(Surv(years, div) ~ edu, data = divorce)
-
 edu_coxph
 ```
 
@@ -324,19 +323,28 @@ Now that we know education is a significant predictor even when controlled for r
 ## Effect of Racial Makeup
 
 ```{r}
-BIC(edu_coxph)
-BIC(eh_coxph)
-BIC(em_coxph)
-BIC(emb_coxph)
-BIC(embw_coxph)
+edu_BIC <- BIC(edu_coxph)
+eh_BIC <- BIC(eh_coxph)
+em_BIC <- BIC(em_coxph)
+emb_BIC <- BIC(emb_coxph)
+embw_BIC <- BIC(embw_coxph)
 
 edu_couple_coxph <- coxph(Surv(years, div) ~ edu + couple, data = divorce)
-BIC(edu_couple_coxph)
+edu_couple_BIC <- BIC(edu_couple_coxph)
+```
+```{r, echo = FALSE}
+r = 2
+a = paste("Base model =", round(edu_BIC, r))
+b = paste("Edu + Husband_Race =", round(eh_BIC, r))
+c = paste("Edu + Mixed =", round(em_BIC, r))
+d = paste("Edu + Mixed + Husband_Race =", round(emb_BIC, r))
+e = paste("Edu + Mixed + Husband_Race + Wife_Race =", round(embw_BIC, r))
+f = paste("Edu + Couple =", round(edu_couple_BIC, r))
 
-# Make this shit print better
+neatPrint(c(a,b,c,d,e,f))
 ```
 
-Although the BIC on the model using education and mixed couple was the lowest, we decided to continue our analysis using a new variable, "couple" which encodes all the racial makeups into one predictor. Below, we test the difference between the two to ensure there is no statistical difference.
+Although the BIC on the model using education and mixed couple was the lowest, we decided to continue our analysis using a new variable, "couple" which encodes all the racial makeups into one predictor. Below, we test the difference between the two models to ensure there is no statistical difference.
 
 We are testing to see if there is a significant difference between the model using the newly encoded predictor, and the model containing the individual predictors being encoded.
 
@@ -366,6 +374,7 @@ a <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
   ggtitle("Log-Log curve for Education level") +
   ylab("Y") +
   scale_x_log10() +
+  geom_vline(xintercept = 3.85) +
   theme(legend.title = element_blank())
 
 b <- ggplot(divorce, mapping = aes(time = years, status = div, color = couple)) +
@@ -388,15 +397,64 @@ plot_grid(a,b)
 edu_zph <- cox.zph(edu_coxph)
 edu_couple_zph <- cox.zph(edu_couple_coxph)
 
-edu_zph
 edu_couple_zph
 ```
 
-While our numerical test indicates that education does **not** violate the proportional hazards assumption, we will still investigate the improvement of adding a time-transformation
+While our numerical test indicates that the education covariate does **not** violate the proportional hazards assumption, we will still investigate the improvement made by including a time-transformation.
 
-The numerical test for racial makeup of the couple confirms the suspicions from the c-log-log plot. The predictor does violate the proportional hazards assumption and we will then use it as a stratified variable.
-
-## Time Transform
+The numerical test for racial makeup of the couple confirms the suspicions from the c-log-log plot. The predictor **does** violate the proportional hazards assumption and we will then use it as a stratified variable.
 
 ## Stratification
 
+```{r}
+# Make Cox and KM models with stratified variable
+edu_strata_coxph <- coxph(Surv(years, div) ~ edu + strata(couple), data = divorce)
+# Check PH assumption, BIC, ...likelihood ratio test?
+edu_strata_zph <- cox.zph(edu_strata_coxph)
+strata_BIC <- round(BIC(edu_strata_coxph), r)
+```
+```{r, echo = FALSE}
+a <- paste("Base model BIC =", round(edu_BIC, r))
+b <- paste("Strata model BIC =", round(strata_BIC))
+neatPrint(c(a,b))
+```
+
+The numerical tests show that using couple *as a stratified variable* improves on the previous model using education and couple.
+
+```{r, echo = F}
+contors1 <- data.frame(couple = as.factor(c("BB", "BB", "BB", "BO", "BO", "BO", "OB", "OB", "OB", "OO", "OO", "OO")), 
+                       edu = as.factor(c(0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2)) )
+edu_strata_km <- survfit(edu_strata_coxph, newdata = contors1)
+plot(edu_strata_km, col = 1:4, lty = c(rep(1,3), rep(4, 3), rep(8,3), rep(9,3)))
+legend(50, 1, c("0", "1", "2", "BB", "BO", "OB", "OO"), col=c(1:4, 2, 2), lty = c(rep(1,3), rep(4, 3), rep(8,3), rep(9,3)))
+```
+
+**But**, being the naive statisticians that we are, we did not realize the cartesian product between couple and education would result in an uninterpretable plot of the KM estimates. In the spirit of discovery, we checked the PH assumptions for the model using education and mixed. The tests confirmed that we did not have any violations
+
+```{r}
+em_coxph <- coxph(Surv(years,div) ~ strata(mixed) + edu, data=divorce)
+contors2 <- data.frame(edu = as.factor(c(0,1,2,0,1,2)), mixed = as.factor(c(0,0,0,1,1,1)))
+em_km <- survfit(em_coxph, newdata = contors2)
+```
+```{r, echo = F}
+plot(em_km, ymin = .20, col = 1:3, lwd = 2, lty = c(rep(1,3), rep(4, 3)))
+legend(50, 1, c("0", "1", "2", "Mixed", "Non-Mixed"), col=c(1:3, 2, 2), lty = c(1,1,1,1,4))
+```
+
+*Note that the minimum y-axis value is 0.20.* Interpet plot here.
+
+## Time Transform
+
+Observations split on time == 3.85, we will use this time transformation (instead of the more involved approach) because it does not introduce a new $\beta$.
+
+```{r}
+# Split on t = 3.85
+edu_split_df <- survSplit(Surv(years, div) ~ edu + couple, data = divorce, cut = 3.85)
+edu_surv_split <- coxph(Surv(years, div) ~ edu, data = edu_split_df)
+edu_couple_surv_split <- coxph(Surv(years, div) ~ edu + couple, data = edu_split_df)
+edu_surv_split
+```
+
+## Final Model Interpretation
+
+## Summary
