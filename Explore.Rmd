@@ -18,7 +18,8 @@ Our dataset comes from a longitudinal study conducted in the United States. Rese
       - 1 if both partners are **not** black
       - 0 if one parter is not black, and the other is
       
-We also encoded two new variables using the above data,
+We also encoded two new variables using the above data, *wblack* and *couple*.
+
   - The wife's race, coded as...
     - 1 if the wife is black
     - 0 otherwise
@@ -227,7 +228,7 @@ ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
 ```
 
 
-```{r, echo=FALSE, message = FALSE}
+```{r, echo=FALSE, message = FALSE, fig.width=7, fig.height=4}
 # Coerce numeric variables
 divorce$edu <- as.factor(divorce$edu)
 divorce$hblack <- as.factor(divorce$hblack)
@@ -314,7 +315,7 @@ Plot analysis clockwise from top left.
 
 **Top Right** This plot is especially interesting, as one would expect there to be a linear relationship between the education levels and the respective hazard rates... for example, $S_{1}(X) < S_{2}(X) < S_{3}(X)$ (where $S_{i}$ denotes the survival function of the ith education level). Interestingly, we do not see this trend. The survival rates of couples with a college-educated husband are visibly lower than that of couples with either a high-school educated or graduate-educated husband.
 
-**Bottom Right** <<<<<<<< FILL IN EXPLANARTION HERE >>>>>>>>
+**Bottom Right** The *couple* predictor gives us a greater insight than *mixed*. Interestingly, we can see that couples with neither partner being black have a higher survival function. 
 
 **Bottom Left** Non-mixed couples are likely to survive longer, shown by their higher survival function and that their observations carried on longer into the study.
 
@@ -345,7 +346,7 @@ emb_coxph
 embw_coxph
 ```
 
-The R output above confirms that *education* is a significant predictor in all control situations. Now that we have established that education *alone* is a stable covariate, our team wanted to investigate the above models further. Our motivation is that one (or more) of the models may be a better choice than *education* alone.
+The R output above confirms that *education* is a significant predictor in all control situations. Now that we have established that education alone is a stable covariate, our team decided to investigate the above models further. Our motivation is that one (or more) of the models may be a better choice than *education* alone.
 
 ## Effect of Racial Makeup
 
@@ -374,7 +375,7 @@ neatPrint(c(a,b,c,d,e,f))
 
 Although the BIC on the model using *education* and *mixed* was the lowest, we decided to continue our analysis using a new variable, *couple* which encodes all the racial makeups into one predictor. Our justification is that *couple* holds far more information than *mixed* and may provide a more insightful model. 
 
-Below, we use a log-rank test to ensure there is no significant difference between the model using the newly encoded predictor, and the model containing the individual predictors being encoded.
+Below, we use a likelihood ratio test to ensure there is no significant difference between the model using the newly encoded predictor, and the model containing the individual predictors being encoded.
 
 ```{r}
 chi_test <- 2*(edu_couple_coxph$loglik[[2]] - em_coxph$loglik[[2]])
@@ -394,7 +395,7 @@ This allows us to use a more condensed predictor for later analysis. Lastly, it 
 ## Checking Proportional Hazard Assumptions 
 
 ### Graphical Approach
-```{r, echo = FALSE, message = FALSE}
+```{r, echo = FALSE, message = FALSE, fig.width=7, fig.height=4}
 # Make more ticks marks on the X axis?
 
 a <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
@@ -403,7 +404,7 @@ a <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
   ggtitle("Log-Log curve for Education level") +
   ylab("Y") +
   scale_x_log10() +
-  geom_vline(xintercept = 3.85) +
+  geom_vline(mapping = aes(alpha = 0.5, color = "grey"), xintercept = 3.85) +
   theme(legend.title = element_blank())
 
 b <- ggplot(divorce, mapping = aes(time = years, status = div, color = couple)) +
@@ -447,7 +448,7 @@ b <- paste("Strata model BIC =", round(strata_BIC))
 neatPrint(c(a,b))
 ```
 
-The numerical tests show that using *couple* as a stratified variable improves on the previous model using education and couple.
+The numerical tests show that using *couple* as a stratified variable improves on the previous model using education and couple (as a non-stratified variable).
 
 ```{r, echo = F}
 contors1 <- data.frame(couple = as.factor(c("BB", "BB", "BB", "BO", "BO", "BO", "OB", "OB", "OB", "OO", "OO", "OO")), 
@@ -455,9 +456,10 @@ contors1 <- data.frame(couple = as.factor(c("BB", "BB", "BB", "BO", "BO", "BO", 
 edu_strata_km <- survfit(edu_strata_coxph, newdata = contors1)
 plot(edu_strata_km, col = 1:4, lty = c(rep(1,3), rep(4, 3), rep(8,3), rep(9,3)))
 legend(50, 1, c("0", "1", "2", "BB", "BO", "OB", "OO"), col=c(1:4, 2, 2), lty = c(rep(1,3), rep(4, 3), rep(8,3), rep(9,3)))
+title("Cox-PH Model with Stratification")
 ```
 
-**But**, being the naive statisticians that we are, we did not realize the cartesian product between *couple* and *education* would result in an uninterpretable plot of the KM estimates. In the spirit of discovery, we checked the PH assumptions for the model using *education* and *mixed*. The tests confirmed that we did not have any violations
+**But**, being the naive statisticians that we are, we did not realize the cartesian product between the factor levels of *couple* and *education* would result in an uninterpretable plot of the KM estimates. In the spirit of discovery, we checked the PH assumptions for the model using *education* and *mixed*. The tests confirmed that we did not have any violations
 
 ```{r}
 em_coxph <- coxph(Surv(years,div) ~ strata(mixed) + edu, data=divorce)
@@ -467,9 +469,10 @@ em_km <- survfit(em_coxph, newdata = contors2)
 ```{r, echo = F}
 plot(em_km, ymin = .20, col = 1:3, lwd = 2, lty = c(rep(1,3), rep(4, 3)))
 legend(50, 1, c("0", "1", "2", "Mixed", "Non-Mixed"), col=c(1:3, 2, 2), lty = c(1,1,1,1,4))
+title("Cox-PH Model with Stratification")
 ```
 
-*Note that the minimum y-axis value is 0.20.* Interpet plot here.
+*Note that the minimum y-axis value is 0.20.*  <<<<<<<< Interpet plot here. >>>>>>>>
 
 ## Time Transform
 
