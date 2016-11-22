@@ -445,47 +445,60 @@ strata_BIC <- round(BIC(edu_strata_coxph), r)
 ```{r, echo = FALSE}
 a <- paste("Base model BIC =", round(edu_BIC, r))
 b <- paste("Strata model BIC =", round(strata_BIC))
+edu_strata_zph
 neatPrint(c(a,b))
 ```
 
-The numerical tests show that using *couple* as a stratified variable improves on the previous model using education and couple (as a non-stratified variable).
+<<<<<<< talk about zph output here >>>>>>... The numerical tests show that using *couple* as a stratified variable improves on the previous model using education and couple (as a non-stratified variable).
 
-```{r, echo = F}
-contors1 <- data.frame(couple = as.factor(c("BB", "BB", "BB", "BO", "BO", "BO", "OB", "OB", "OB", "OO", "OO", "OO")), 
-                       edu = as.factor(c(0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2)) )
-edu_strata_km <- survfit(edu_strata_coxph, newdata = contors1)
-plot(edu_strata_km, col = 1:4, lty = c(rep(1,3), rep(4, 3), rep(8,3), rep(9,3)))
-legend(50, 1, c("0", "1", "2", "BB", "BO", "OB", "OO"), col=c(1:4, 2, 2), lty = c(rep(1,3), rep(4, 3), rep(8,3), rep(9,3)))
-title("Cox-PH Model with Stratification")
+```{r, echo = F,  fig.width=7, fig.height=3.5}
+couple_levels = as.factor(c("BB", "BO", "OB", "OO"))
+ymin = 0.3
+margin_ = c(3, 3, 1, 1)
+# Edu 0
+contors1 <- data.frame(couple = couple_levels,
+                       edu = as.factor(0))
+edu_strata_km1 <- survfit(edu_strata_coxph, newdata = contors1)
+par(mar = margin_)
+plot(edu_strata_km1, col = 1:4, lty = 1, ymin = ymin)
+legend(50, 1, couple_levels, col = 1:4, lty = 1)
+title("HS Education with Stratification")
+```
+```{r, echo = F,  fig.width=7, fig.height=3.5}
+# Edu 1
+contors2 <- data.frame(couple = couple_levels,
+                       edu = as.factor(1))
+edu_strata_km2 <- survfit(edu_strata_coxph, newdata = contors2)
+par(mar = margin_)
+plot(edu_strata_km2, col = 1:4, lty = 1, ymin = ymin)
+legend(50, 1, couple_levels, col = 1:4, lty = 1)
+title("BS Education with Stratification")
+```
+```{r, echo = F,  fig.width=7, fig.height=3.5}
+# Edu 2
+contors3 <- data.frame(couple = couple_levels,
+                       edu = as.factor(2))
+edu_strata_km3 <- survfit(edu_strata_coxph, newdata = contors3)
+par(mar = margin_)
+plot(edu_strata_km3, col = 1:4, lty = 1, ymin = ymin)
+legend(50, 1, couple_levels, col = 1:4, lty = 1)
+title("Graduate Education with Stratification")
 ```
 
-**But**, being the naive statisticians that we are, we did not realize the cartesian product between the factor levels of *couple* and *education* would result in an uninterpretable plot of the KM estimates. In the spirit of discovery, we checked the PH assumptions for the model using *education* and *mixed*. The tests confirmed that we did not have any violations
-
-```{r}
-em_coxph <- coxph(Surv(years,div) ~ strata(mixed) + edu, data=divorce)
-contors2 <- data.frame(edu = as.factor(c(0,1,2,0,1,2)), mixed = as.factor(c(0,0,0,1,1,1)))
-em_km <- survfit(em_coxph, newdata = contors2)
-```
-```{r, echo = F}
-plot(em_km, ymin = .20, col = 1:3, lwd = 2, lty = c(rep(1,3), rep(4, 3)))
-legend(50, 1, c("0", "1", "2", "Mixed", "Non-Mixed"), col=c(1:3, 2, 2), lty = c(1,1,1,1,4))
-title("Cox-PH Model with Stratification")
-```
-
-*Note that the minimum y-axis value is 0.20.*  <<<<<<<< Interpet plot here. >>>>>>>>
+<<<<<< interpet plots here >>>>>>
+Note that y axos min is at 0.3, and you need to look closely at the y axis to see the difference in curves.
 
 ## Time Transform
 
-Observations split on time == 3.85, we will use this time transformation (instead of the more involved approach) because it does not introduce a new $\beta$.
+Observations split on time == 47, we will use this time transformation (instead of the more involved approach) because it does not introduce a new $\beta$.
 
 ```{r}
-# Split on t = 3.85
-edu_split_df <- survSplit(Surv(years, div) ~ edu + couple, data = divorce, cut = 3.85)
-edu_surv_split <- coxph(Surv(years, div) ~ edu, data = edu_split_df)
+# Split on t = exp(3.85) = 46.99
+edu_split_df <- survSplit(Surv(years, div) ~ edu + couple, data = divorce, cut = 46.99, episode = "Ep")
+edu_surv_split <- coxph(Surv(years, div) ~ edu:Ep, data = edu_split_df)
 edu_couple_surv_split <- coxph(Surv(years, div) ~ edu + couple, data = edu_split_df)
 edu_surv_split
 ```
 
-## Final Model Interpretation
-
-## Summary
+## Final Summary
+For this project we decided to explore if and how a husband's education affects divorce rates over time while taking into account the race of the couple. Our goal was to find the most significant model using various statistical methods that we learned in class as well as from our textbook. We determined that education definitely has an impact on divorce rate and then tested how other variables contributed to our model. As a final model we chose to include education and mixed race (stratified) as the variable of interest and control respectively. Our data tells us that when the husband has a bachelor's degree the marriage will fail 1.3 times faster than if he had a highschool degree. When having a Master's degree or above the marriage will fail .99 times faster in comparison to a highschool degree (Roughly the same rate). This tells us that getting a Master's degree or above will 
