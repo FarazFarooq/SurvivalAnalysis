@@ -31,11 +31,11 @@ We also encoded two new variables using the above data, *wblack* and *couple*.
       
 ## Research question
 
-Our team primarily interested in how the husband's education level affects time until divorce, using the various racial covariates as controlling variables. Our secondary goal was to investigate the influence of racial makeups as a stratified variable.
+Our team was primarily interested in how the husband's highest education level affects time until divorce, using the various racial covariates as controlling variables. Our secondary goal was to investigate the influence of racial makeups as a stratified variable.
 
 ## Methodology
 
-After an exploratory analysis, our team began with a base Cox-PH model including only the husband's education level. We then constructed various control models using the racial covariates. After establishing that the base model is still significant under the controls, we turned our interest to the possible influence of these racial predictors as stratified variables.
+After an exploratory analysis, our team began modeling the data with a base Cox-PH model including only the husband's education level. We then constructed various control models using the racial covariates. After establishing that the base model was still significant under the controls, we turned our interest to the possible influence of these racial predictors as stratified variables. Finally, our team investigated the necessity of a time-transform to compensate for the near non-proportionality between two levels of the education predictor. Sadly, the time-transformation offered no additional insight.
 
 ## Exploratory Analysis of Covariates
 
@@ -49,20 +49,14 @@ library(cowplot)
 library(devtools)
 library(ggkm)
 
-# One library is not on CRAN, using devtools we can install it from GitHub
+# ggkm is not on CRAN, using devtools we can install it from GitHub
 # devtools::install_github("sachsmc/ggkm")
 # https://github.com/sachsmc/ggkm
-
-# Load data, working directory needs to be set
-colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
-divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
-head(divorce)
 ```
-We turn the covariates into factors so we can group the covariate values as categories.
-In order to focus on education we wanted to treat race as a controlled variable, instead of having two covariates involving race, we made a new column that fully encodes the couple's racial makeup. 
 
-```{r, echo = FALSE}
+```{r, echo = F, message = F}
 # FUNCTIONS
+# This chunk is hidden from the knitted PDF
 
 # Function to make the wife's race
 femalecol <- function(dataframe){
@@ -227,17 +221,26 @@ ggsurv <- function(s, CI = 'def', plot.cens = T, surv.col = 'gg.def',
 }
 ```
 
+```{r}
+# Load data
+colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
+divorce <- read.table(file = "divorce.txt", header = F, col.names = colNames)
 
-```{r, echo=FALSE, message = FALSE, fig.width=7, fig.height=4}
 # Coerce numeric variables
 divorce$edu <- as.factor(divorce$edu)
 divorce$hblack <- as.factor(divorce$hblack)
 divorce$mixed <- as.factor(divorce$mixed)
 
-# Encode variables
+# Encode race variables
 divorce <- femalecol(divorce)
 divorce <- couple_column(divorce)
 
+head(divorce)
+```
+
+The functions *femalecol( )* and *couple_column( )* encode the wife's race and the couple's racial makeup respectively. Their levels are explained in the Introduction above.
+
+```{r, echo=FALSE, message = FALSE, fig.width=7, fig.height=4}
 # Smooth histograms of censored variables
 a <- ggplot(divorce) + 
   geom_density(mapping = (aes(x=years, fill = as.factor(div), group = div)), alpha = .5)+
@@ -253,7 +256,7 @@ mixed_HS = paste(round( (edu_counts$mixed[1] / sum(edu_counts[1,])), 2) * 100, "
 mixed_BA = paste(round( (edu_counts$mixed[2] / sum(edu_counts[2,])), 2) * 100, "%", sep = "")
 mixed_MA = paste(round( (edu_counts$mixed[3] / sum(edu_counts[3,])), 2) * 100, "%", sep = "")
 
-appending_text = "\n mixed race"
+appending_text = "\n mixed"
 HS_text = paste(mixed_HS, appending_text)
 BA_text = paste(mixed_BA, appending_text)
 MA_text = paste(mixed_MA, appending_text)
@@ -270,9 +273,11 @@ b <- ggplot(divorce)+
 plot_grid(a,b)
 ```
 
-**Left** We can see that the bulk of our observed divorces, colored in blue, occur around the ten year mark. Our censored observations, colored in orange, drop steeply at 30 years into the study. 
+*Plot analysis from left to right*
 
-**Right** This plot shows the frequency of different education levels in our data. The bars are colored by their proportion of black husbands within the education level. So we can see that our data is largely composed of couples with husbands that are not African American. Lastly, the percentages over each bar report the percent of mixed race coupled within their respective education bracket. For example, 27% of couples in education bracket **0** are mixed.
+**Fig. 1** We can see that the bulk of our observed divorces, colored in blue, occur around the ten year mark. Our censored observations, colored in orange, drop steeply at 30 years into the study. 
+
+**Fig. 2** This plot shows the frequency of different education levels in our data. The bars are colored by their proportion of black husbands within the education level. So we can see that our data is largely composed of couples with husbands that are **not*** African American. Lastly, the percentages over each bar report the percent of mixed race coupled within their respective education bracket. For example, 27% of couples in education bracket **0** are mixed.
 
 ## Exploratory Survival Curves
 
@@ -307,17 +312,18 @@ d <- ggsurv(coupleKM, plot.cens = F) +
   xlab("Time in Years") +
   theme(legend.title = element_blank()) + ylab("Probability")
 
-plot_grid(a,b,c,d, nrow = 2, ncol = 2, label_size = 10)
+plot_grid(a,b, nrow = 1, ncol = 2, label_size = 10)
+plot_grid(c,d, nrow = 1, ncol = 2, label_size = 10)
 ```
-Plot analysis clockwise from top left.
+*Plot analysis clockwise from top left.*
 
-**Top Left** Thanks to the large number of observations, our KM estimate is nearly a smooth line.
+**Fig. 3** Thanks to the large number of observations, our KM estimate is nearly a smooth line.
 
-**Top Right** This plot is especially interesting, as one would expect there to be a linear relationship between the education levels and the respective hazard rates... for example, $S_{1}(X) < S_{2}(X) < S_{3}(X)$ (where $S_{i}$ denotes the survival function of the ith education level). Interestingly, we do not see this trend. The survival rates of couples with a college-educated husband are visibly lower than that of couples with either a high-school educated or graduate-educated husband.
+**Fig. 4** This plot is especially interesting, as one would expect there to be a linear relationship between the education levels and the respective hazard rates... for example, $S_{1}(X) < S_{2}(X) < S_{3}(X)$ (where $S_{i}$ denotes the survival function of the ith education level). Interestingly, we do not see this trend. The survival rates of couples with a college-educated husband are visibly lower than that of couples with either a high-school educated or graduate-educated husband.
 
-**Bottom Right** The *couple* predictor gives us a greater insight than *mixed*. Interestingly, we can see that couples with neither partner being black have a higher survival function. 
+**Fig. 5** The *couple* predictor gives us a greater insight than *mixed*. Interestingly, we can see that couples with neither partner being black have a higher survival function. 
 
-**Bottom Left** Non-mixed couples are likely to survive longer, shown by their higher survival function and that their observations carried on longer into the study.
+**Fig. 6** Non-mixed couples are likely to survive longer, shown by their higher survival curve and that their marriages carried on longer into the study.
 
 ## Modeling
 
@@ -327,16 +333,16 @@ edu_coxph <- coxph(Surv(years, div) ~ edu, data = divorce)
 edu_coxph
 ```
 
-Our base model is significant. 
+Although the P-value for the ratio between education levels 0 and 2 (highschool and graduate) is not significant, the model as a whole attains a significant P-value of 0.017%. The high P-value for education levels 0 and 2 is not surprising, however, given how close the two curves are in **Figure 4**.
 
 ## Control for Racial Makeup
 
-Here we add the racial covariates to previous model with education. Our goal is to ensure education is a significant predictor in all models.
+Here we add the racial covariates to previous. Our goal is to ensure that *education* is still a significant predictor in all models.
 
 ```{r}
 eh_coxph <- coxph(Surv(years,div) ~ edu + hblack, data=divorce)
 em_coxph <- coxph(Surv(years,div) ~ edu + mixed, data=divorce)
-emb_coxph <- coxph(Surv(years,div) ~ edu + mixed + hblack , data=divorce)
+emb_coxph <- coxph(Surv(years,div) ~ edu + mixed + hblack, data=divorce)
 embw_coxph <- coxph(Surv(years,div) ~ edu + mixed + hblack + wblack, data=divorce)
 ```
 ```{r, echo = FALSE}
@@ -346,7 +352,7 @@ emb_coxph
 embw_coxph
 ```
 
-The R output above confirms that *education* is a significant predictor in all control situations. Now that we have established that education alone is a stable covariate, our team decided to investigate the above models further. Our motivation is that one (or more) of the models may be a better choice than *education* alone.
+The R output above confirms that *education* is a significant predictor in all control situations. Now that we have established that *education* alone is a stable covariate, our team decided to investigate the above models further. Our motivation is that one (or more) of the models may in fact be a better choice than *education* alone.
 
 ## Effect of Racial Makeup
 
@@ -357,7 +363,7 @@ em_BIC <- BIC(em_coxph)
 emb_BIC <- BIC(emb_coxph)
 embw_BIC <- BIC(embw_coxph)
 
-# Model using new couple covariate
+# A new model using the new "couple"" covariate
 edu_couple_coxph <- coxph(Surv(years, div) ~ edu + couple, data = divorce)
 edu_couple_BIC <- BIC(edu_couple_coxph)
 ```
@@ -373,9 +379,9 @@ f = paste("Edu + Couple =", round(edu_couple_BIC, r))
 neatPrint(c(a,b,c,d,e,f))
 ```
 
-Although the BIC on the model using *education* and *mixed* was the lowest, we decided to continue our analysis using a new variable, *couple* which encodes all the racial makeups into one predictor. Our justification is that *couple* holds far more information than *mixed* and may provide a more insightful model. 
+Although the BIC on the model using *education* and *mixed* was the lowest, we decided to continue our analysis using a new variable, *couple* which encodes all the racial makeups into one predictor. Our reasoning is that *couple* encodes far more information than *mixed* and may provide a more insightful model. 
 
-Below, we use a likelihood ratio test to ensure there is no significant difference between the model using the newly encoded predictor, and the model containing the individual predictors being encoded.
+To justify our decision, we used a likelihood ratio test to ensure there is no significant difference between the model using the newly encoded predictor, and the model which attained the lowest BIC (em_coxph).
 
 ```{r}
 chi_test <- 2*(edu_couple_coxph$loglik[[2]] - em_coxph$loglik[[2]])
@@ -385,12 +391,12 @@ chi_test <- 2*(edu_couple_coxph$loglik[[2]] - em_coxph$loglik[[2]])
 1 - pchisq(chi_test, df = 5-3)
 ```
 
-The P-value is 0.075, which is above any common significance level. Therefore, there is no significant difference between the two models using...
+The P-value is 7.5%, which is above any common significance level. Therefore, there is no significant difference between the two models using...
 
-  - Education + Couple
-  - Education + Mixed
+  - *base* ~ Education + Couple
+  - *base* ~ Education + Mixed
 
-This allows us to use a more condensed predictor for later analysis. Lastly, it is interesting to note that the model using Education + Mixed + Hblack + Wblack is in fact the same model as Education + Couple.
+This allows us to use a more condensed predictor for later analysis. Lastly, it is interesting to note that the model using Education + Mixed + Hblack + Wblack is in fact the same model as Education + Couple. We expected to see this since they encode the same information, but it is encouraging nonetheless.
 
 ## Checking Proportional Hazard Assumptions 
 
@@ -403,6 +409,7 @@ a <- ggplot(divorce, mapping = aes(time = years, status = div, color = edu)) +
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Education level") +
   ylab("Y") +
+  xlab("ln(time)") +
   scale_x_log10() +
   geom_vline(mapping = aes(alpha = 0.5, color = "grey"), xintercept = 3.85) +
   theme(legend.title = element_blank())
@@ -411,16 +418,19 @@ b <- ggplot(divorce, mapping = aes(time = years, status = div, color = couple)) 
   geom_km(trans = "cloglog") +
   ylab("Complementary Log-Log") + 
   ggtitle("Log-Log curve for Couple Makeup") +
-  ylab("Y") +
+  ylab("Y") + 
+  xlab("ln(time)") +
   scale_x_log10() +
   theme(legend.title = element_blank())
 
 plot_grid(a,b)
 ```
 
-**Left** The intersecting lines are concerning, so we will investigate the necessity of a time-transformation on education.
+*Plot analysis from left to right.*
 
-**Right** Again, the intersecting lines are concerning. In this case, however, we will investigate the necessity of stratifying the racial makeup predictor.
+**Fig. 7** The intersecting lines are concerning because they indicate a possible violation of the proportionality assumption of the Cox PH model. Our team investigated the necessity of a time-transformation on education to account for the issue. The vertical line to indicate where the lines cross; it is placed at ln(47) = 3.85.
+
+**Fig. 8** Again, the intersecting lines are concerning. In this case, however, we will investigate the necessity of stratifying the racial makeup predictor.
 
 ### Numerical Approach
 ```{r}
@@ -436,25 +446,36 @@ The numerical test for racial makeup of the couple confirms our suspicions from 
 
 ## Stratification
 
+Here we use *couple* as a stratified covariate because it violated the proportionality assumption and we are still interested in gaining insight from its inclusion.
+
 ```{r}
-# Make Cox and KM models with stratified variable
+# Construct Cox-PH model with the stratified variable
 edu_strata_coxph <- coxph(Surv(years, div) ~ edu + strata(couple), data = divorce)
 edu_strata_zph <- cox.zph(edu_strata_coxph)
 strata_BIC <- round(BIC(edu_strata_coxph), r)
 ```
+
 ```{r, echo = FALSE}
 a <- paste("Base model BIC =", round(edu_BIC, r))
 b <- paste("Strata model BIC =", round(strata_BIC))
+edu_strata_coxph
 edu_strata_zph
 neatPrint(c(a,b))
 ```
 
-<<<<<<< talk about zph output here >>>>>>... The numerical tests show that using *couple* as a stratified variable improves on the previous model using education and couple (as a non-stratified variable).
+*Numerical test analysis*
+
+**Cox Model** Stratifying on *couple* highlights the differences between the levels of *education*, as the P-values for both coefficients are even more disparate than the original model. As before, the ratio between divorce rates of highschool-educated and graduate-educated marriages does not achieve a significant P-value. Stratifying on *couple* shows that the difference between the divorce rates of highschool-educated and graduate-educated marriages are even more pronounced. The total model is significant.
+
+**Proportionality Test** As expected, stratifying *couple* ensures the model does not violate the proportionality assumption. Neither the factor levels of *education* nor the total model achieve a significant P-value.
+
+**BIC** The BIC of the stratified model is quite lower than the original model, indicating that it is likely a better fit for our data.
 
 ```{r, echo = F,  fig.width=7, fig.height=3.5}
 couple_levels = as.factor(c("BB", "BO", "OB", "OO"))
 ymin = 0.3
 margin_ = c(3, 3, 1, 1)
+
 # Edu 0
 contors1 <- data.frame(couple = couple_levels,
                        edu = as.factor(0))
@@ -464,6 +485,7 @@ plot(edu_strata_km1, col = 1:4, lty = 1, ymin = ymin)
 legend(50, 1, couple_levels, col = 1:4, lty = 1)
 title("HS Education with Stratification")
 ```
+
 ```{r, echo = F,  fig.width=7, fig.height=3.5}
 # Edu 1
 contors2 <- data.frame(couple = couple_levels,
@@ -474,7 +496,8 @@ plot(edu_strata_km2, col = 1:4, lty = 1, ymin = ymin)
 legend(50, 1, couple_levels, col = 1:4, lty = 1)
 title("BS Education with Stratification")
 ```
-```{r, echo = F,  fig.width=7, fig.height=3.5}
+
+```{r, echo =F,  fig.width=7, fig.height=3.5}
 # Edu 2
 contors3 <- data.frame(couple = couple_levels,
                        edu = as.factor(2))
@@ -485,20 +508,30 @@ legend(50, 1, couple_levels, col = 1:4, lty = 1)
 title("Graduate Education with Stratification")
 ```
 
-<<<<<< interpet plots here >>>>>>
-Note that y axos min is at 0.3, and you need to look closely at the y axis to see the difference in curves.
+*Plot interpetation from top to bottom. Please note that the y-axis minimum is set to 0.30*
+
+**Fig. 9** 
+
+**Fig. 10** 
+
+**Fig. 11** 
 
 ## Time Transform
 
-Observations split on time == 47, we will use this time transformation (instead of the more involved approach) because it does not introduce a new $\beta$.
+As we learned in **Figure 7**, the time in question occured at 47 years. Our team decided to split each observation at this time. We opted for this approach over introducing a new term, $\beta*g(X)$, because the four factor levels in the stratified variable make model interpretation difficult.
 
 ```{r}
-# Split on t = exp(3.85) = 46.99
-edu_split_df <- survSplit(Surv(years, div) ~ edu + couple, data = divorce, cut = 46.99, episode = "Ep")
+# Split on t = exp(3.85) = 47
+edu_split_df <- survSplit(Surv(years, div) ~ edu, data = divorce, cut = 47, episode = "Ep")
 edu_surv_split <- coxph(Surv(years, div) ~ edu:Ep, data = edu_split_df)
-edu_couple_surv_split <- coxph(Surv(years, div) ~ edu + couple, data = edu_split_df)
+# edu_couple_surv_split <- coxph(Surv(years, div) ~ edu + couple, data = edu_split_df) ...  necessary?
 edu_surv_split
 ```
 
+Sadly, there are very few observed instances of divorce past 47 years, as shown by **Figure 1**. This class imbalance is at the root of the strange output of the Cox model. Although the numerical output is uninterpretable, the class imbalance past 47 years is also the reason for the crossing lines in the clog-log plot in **Figure 7**. 
+
+<<<<< Add more saying that we didn't get anything from the numerical output, but the investigation helped us to find the root cause of the problematic clog-log plot! >>>>>
+
 ## Final Summary
+
 For this project we decided to explore if and how a husband's education affects divorce rates over time while taking into account the race of the couple. Our goal was to find the most significant model using various statistical methods that we learned in class as well as from our textbook. We determined that education definitely has an impact on divorce rate and then tested how other variables contributed to our model. As a final model we chose to include education and mixed race (stratified) as the variable of interest and control respectively. Our data tells us that when the husband has a bachelor's degree the marriage will fail 1.3 times faster than if he had a highschool degree. When having a Master's degree or above the marriage will fail .99 times faster in comparison to a highschool degree (Roughly the same rate). This tells us that getting a Master's degree or above will 
