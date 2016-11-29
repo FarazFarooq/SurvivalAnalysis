@@ -463,6 +463,13 @@ edu_strata_zph
 neatPrint(c(a,b))
 ```
 
+## Confidence Intervals
+```{r}
+
+conf_int <- summary(edu_strata_coxph)$conf.int[,3:4]
+conf_int
+```
+
 *Numerical test analysis*
 
 **Cox Model** Stratifying on *couple* highlights the differences between the levels of *education*, as the P-values for both coefficients are even more disparate than the original model. As before, the ratio between divorce rates of highschool-educated and graduate-educated marriages does not achieve a significant P-value. Stratifying on *couple* shows that the difference between the divorce rates of highschool-educated and graduate-educated marriages are even more pronounced. The total model is significant.
@@ -470,6 +477,12 @@ neatPrint(c(a,b))
 **Proportionality Test** As expected, stratifying *couple* ensures the model does not violate the proportionality assumption. Neither the factor levels of *education* nor the total model achieve a significant P-value.
 
 **BIC** The BIC of the stratified model is quite lower than the original model, indicating that it is likely a better fit for our data.
+
+**Confidence Intervals**
+
+*Bachelors (edu1)* : We are 95% sure that our true ratio for a bachelor's degree is between 1.18 and 1.55 
+
+*Master's or Above (edu2)* : We are 95% sure that our true ratio for a master's degree or above is between .83 and 1.28 which verifies that it is not significantly different from having a high school education.
 
 ```{r, echo = F,  fig.width=7, fig.height=3.5}
 couple_levels = as.factor(c("BB", "BO", "OB", "OO"))
@@ -530,8 +543,7 @@ edu_surv_split
 
 Sadly, there are very few observed instances of divorce past 47 years, as shown by **Figure 1**. This class imbalance is at the root of the strange output of the Cox model. Although the numerical output is uninterpretable, the class imbalance past 47 years is also the reason for the crossing lines in the clog-log plot in **Figure 7**. 
 
-<<<<< Add more saying that we didn't get anything from the numerical output, but the investigation helped us to find the root cause of the problematic clog-log plot! >>>>>
 
 ## Final Results/Summary
 
-For this project we decided to explore if and how a husband's education affects divorce rates over time while taking into account the race of the couple. Our goal was to find the most significant model using various statistical methods that we learned in class as well as from our textbook. We determined that education definitely has an impact on divorce rate and then tested how other variables contributed to our model. For our final model we chose to use the education and stratified couple variables as it gives us our most significant p-value and lowest BIC. Regarding the education coefficients we see that with a bachelor's education the marriage roughly fails 1.4 times faster than with a highschool education and having a Master's degree or above results in the same failure rate as with a highschool education. Although we cannot know with certainty why we ended up with the above results, we think that there is less complications between spouse's when the husband has a lower education because it is likely that his partner has a similar education whereas the variance between the spouse's education is higher when the husband has bachelor's degree. When the husband has a master's degree or above the same reason as for the highschool education applies.To have more evidence to determine whether our claim is accurate we would need further exploration with the wife's education and income for both husband and wife as additional variables. In conclusion, according to our results we would recommend pursuing a Master's degree to ensure a more successful marriage.
+For this project we decided to explore if and how a husband's education affects divorce rates over time while taking into account the race of the couple. Our goal was to find the most significant model using various statistical methods that we learned in class as well as from our textbook. We determined that education definitely has an impact on divorce rate and then tested how other variables contributed to our model. For our final model we chose to use the education and stratified couple variables as it gives us our most significant p-value and lowest BIC. Regarding the education coefficients we see that with a bachelor's education the marriage roughly fails 1.4 times faster than with a high school education and having a Master's degree or above results in the same failure rate as with a high school education. Although we cannot know with certainty why we ended up with the above results, we think that there is less complications between spouse's when the husband has a lower education because it is likely that his partner has a similar education where as the variance between the spouse's education is higher when the husband has a bachelor's degree. When the husband has a master's degree or above then the same reason as for the highschool education applies.To have more evidence to determine whether our claim is accurate we would need further exploration with the wife's education and income for both the husband and wife as additional variables. In conclusion, according to our results we would recommend pursuing a Master's degree to ensure a more successful marriage.
