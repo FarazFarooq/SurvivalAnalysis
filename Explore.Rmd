@@ -1,11 +1,13 @@
 ---
-title: "Exploratory Analysis"
+title: "PSTAT 175 Final Project"
 author: "Alex Brown,David Geyfman, Jason Freeberg, Faraz Farooq"
 date: "November 4, 2016"
 output: pdf_document
 ---
 ## Introduction
-Our dataset comes from a longitudinal study conducted in the United States. Researchers observed the time until divorce of 3371 couples, and tracked three covariates listed below. The data's time variable is measured in years with up to three decimals of precision. The event indicator is labeled 0 for censorship, and 1 for divorce.
+Our dataset comes from a longitudinal study conducted in the United States. The researchers observed the time until divorce of 3371 couples, and tracked three covariates listed below. The data's time variable is measured in years with up to three decimals of precision. The event indicator is labeled 0 for censorship, and 1 for divorce. For more information on our dataset, please follow the reference below.
+*Lillard and Panis (2000), aML Multilevel Multiprocess Statistical Software,*
+*Release 1.0, EconWare, LA, California.*
 
   - The husband's education level, coded as...
       - 0 -> less than 12 years (only high school)
@@ -39,7 +41,7 @@ After an exploratory analysis, our team began modeling the data with a base Cox-
 
 ## Exploratory Analysis of Covariates
 
-The following plots explore the distributions of our covariates.
+The following plots explore the distributions of our covariates. Our visuals were possible thanks to GitHub user sachsmc's **[ggkm package](https://github.com/sachsmc/ggkm)** and Tal Galili's **[ggsurv() function](https://www.r-statistics.com/2013/07/creating-good-looking-survival-curves-the-ggsurv-function/)** from R-Bloggers.
 
 ```{r, message=FALSE}
 # Loading necessary libraries
@@ -51,7 +53,6 @@ library(ggkm)
 
 # ggkm is not on CRAN, using devtools we can install it from GitHub
 # devtools::install_github("sachsmc/ggkm")
-# https://github.com/sachsmc/ggkm
 ```
 
 ```{r, echo = F, message = F}
@@ -237,10 +238,15 @@ divorce <- couple_column(divorce)
 
 head(divorce)
 ```
+```{r, echo = F}
+#couple_table <- table(divorce$couple)
+
+#neatPrint(c("Frequency of couple makeups:", couple_table))
+```
 
 The functions *femalecol( )* and *couple_column( )* encode the wife's race and the couple's racial makeup respectively. Their levels are explained in the Introduction above.
 
-```{r, echo=FALSE, message = FALSE, fig.width=7, fig.height=4}
+```{r, echo=FALSE, message = FALSE, fig.width=7, fig.height=3}
 # Smooth histograms of censored variables
 a <- ggplot(divorce) + 
   geom_density(mapping = (aes(x=years, fill = as.factor(div), group = div)), alpha = .5)+
@@ -258,7 +264,7 @@ mixed_MA = paste(round( (edu_counts$mixed[3] / sum(edu_counts[3,])), 2) * 100, "
 
 appending_text = "\n mixed"
 HS_text = paste(mixed_HS, appending_text)
-BA_text = paste(mixed_BA, appending_text)
+BA_text = paste("\n", mixed_BA, appending_text)
 MA_text = paste(mixed_MA, appending_text)
 proportions = c(HS_text, BA_text, MA_text)
 
@@ -281,7 +287,7 @@ plot_grid(a,b)
 
 ## Exploratory Survival Curves
 
-```{r, echo = FALSE, message=FALSE}
+```{r, echo = FALSE, message=FALSE, fig.width=7, fig.height=3}
 # Some KM estimates
 divorcefit <- Surv(time = divorce$years, event = divorce$div)
 divorceKM <- survfit(divorcefit ~ 1)
@@ -313,8 +319,14 @@ d <- ggsurv(coupleKM, plot.cens = F) +
   theme(legend.title = element_blank()) + ylab("Probability")
 
 plot_grid(a,b, nrow = 1, ncol = 2, label_size = 10)
+
+```
+
+```{r, echo = FALSE, message = FALSE, fig.width=7, fig.height=3}
+
 plot_grid(c,d, nrow = 1, ncol = 2, label_size = 10)
 ```
+
 *Plot analysis clockwise from top left.*
 
 **Fig. 3** Thanks to the large number of observations, our KM estimate is nearly a smooth line.
@@ -471,7 +483,7 @@ neatPrint(c(a,b))
 
 **BIC** The BIC of the stratified model is quite lower than the original model, indicating that it is likely a better fit for our data.
 
-```{r, echo = F,  fig.width=7, fig.height=3.5}
+```{r, echo = F,  fig.width=7, fig.height=3}
 couple_levels = as.factor(c("BB", "BO", "OB", "OO"))
 ymin = 0.3
 margin_ = c(3, 3, 1, 1)
@@ -486,7 +498,7 @@ legend(50, 1, couple_levels, col = 1:4, lty = 1)
 title("HS Education with Stratification")
 ```
 
-```{r, echo = F,  fig.width=7, fig.height=3.5}
+```{r, echo = F,  fig.width=7, fig.height=3}
 # Edu 1
 contors2 <- data.frame(couple = couple_levels,
                        edu = as.factor(1))
@@ -497,7 +509,7 @@ legend(50, 1, couple_levels, col = 1:4, lty = 1)
 title("BS Education with Stratification")
 ```
 
-```{r, echo =F,  fig.width=7, fig.height=3.5}
+```{r, echo =F,  fig.width=7, fig.height=3}
 # Edu 2
 contors3 <- data.frame(couple = couple_levels,
                        edu = as.factor(2))
@@ -507,6 +519,8 @@ plot(edu_strata_km3, col = 1:4, lty = 1, ymin = ymin)
 legend(50, 1, couple_levels, col = 1:4, lty = 1)
 title("Graduate Education with Stratification")
 ```
+
+
 
 *Plot interpetation from top to bottom. Please note that the y-axis minimum is set to 0.30*
 
@@ -520,11 +534,13 @@ title("Graduate Education with Stratification")
 
 As we learned in **Figure 7**, the time in question occured at 47 years. Our team decided to split each observation at this time. We opted for this approach over introducing a new term, $\beta*g(X)$, because the four factor levels in the stratified variable make model interpretation difficult.
 
-```{r}
+```{r, message = F}
 # Split on t = exp(3.85) = 47
 edu_split_df <- survSplit(Surv(years, div) ~ edu, data = divorce, cut = 47, episode = "Ep")
 edu_surv_split <- coxph(Surv(years, div) ~ edu:Ep, data = edu_split_df)
-# edu_couple_surv_split <- coxph(Surv(years, div) ~ edu + couple, data = edu_split_df) ...  necessary?
+edu_surv_split
+```
+```{r, echo = F}
 edu_surv_split
 ```
 
