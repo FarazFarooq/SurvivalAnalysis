@@ -1,0 +1,58 @@
+<section>
+	<h1>THE COX PROPORTIONAL HAZARDS MODEL</h1>
+	<body>
+		<p>
+		Up to now we haven't had the means to find any numerical differences between the racial and educational groups in our data. We can plainly see from our Kaplan Meier plots that some couples divorce much faster than others... but exactly how much faster? To answer that question we need to introduce the Cox proportional hazards model. 
+		</p>
+		<p>
+		In the Cox model, we assume that the hazard rate for one group is proportionally related to that of another group. To put it mathematically, we assume that... 
+		</p>
+		<!--
+		replacewithgithublinklater
+		-->
+		<p style="text-align:center;">
+        <img src= "http://latex2png.com/output//latex_83358698578911cd83c95fef4c32d9c0.png", width= "120", height="40"></img>
+        </p>
+        <p>
+        Where <em> h0(t)</em> is the baseline hazard rate and gamma is the ratio between the two hazard ratios. Keep in mind that this can generalize to multiple groups; we would simply have a gamma for each ratio! Since gamma is the interesting part, let's explore it further. Let's express gamma using the hazard rates of two arbitrary groups, i and j. In the following algebra, please note that it can be shown that the survival function can also be written as...
+        </p>
+        <p style="text-align:center;">
+        <img src= "http://latex2png.com/output//latex_2bce395bc5fef090a36ece90bb290498.png", width= "120", height="40"></img>
+        </p>
+        <p>
+        Please refer to this great StackExchange post to see the proof. For now just take it on faith!
+        </p>
+        <!-- image here -->
+        <p>
+        Our final equation above shows that gamma does not depend on time at all! This means that at any chosen time, the two hazard rates of two groups have the same proportion. If we find that the gamma between two groups is one, that means there is no difference between the groups. This is analogous to finding a coefficient equal to zero in linear regression.
+        </p>
+        <p>
+        Now let's turn to R for an example, we will continue using the survival package. To fit a Cox PH model to our data, we will use coxph( ) along with Surv( ) from the previous section. The code below fits a basic Cox PH model with the edu variable as its only covariate
+        <pre style="color: white">
+		<samp>
+		base_cox_ph <- coxph(Surv(years, div) ~ edu, data = divorce)
+                print(base_cox_ph)
+        </samp>
+	    </pre>
+        </p>
+        <p>
+        The p-values are testing the hypothesis that the coefficients or beta's are equal to zero because a beta = 0 would mean that the two groups have equal hazard rates. You may notice that "edu0" is not in the output. That is because "edu0" is in the ratio of both the "edu1" and "edu2" rows, so that means marriages which fall into education group 1 divorce 1.27 times faster than marriages in education group 0.
+        </p>
+
+
+
+	</body>
+</section>
+<!-- 
+STYLING FORMATS FOR COPY/PASTE
+
+Styling for code chunks:
+	<pre style="color: white">
+		<samp>
+		...
+		</samp>
+	</pre>
+
+Styling for comments in code chunks:
+<strong><span style="color:#348589"> # ... </span></strong>
+-->
