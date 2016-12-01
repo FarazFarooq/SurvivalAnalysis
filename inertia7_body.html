@@ -1,0 +1,199 @@
+<!-- 
+STYLING FORMATS FOR COPY/PASTE
+
+Styling for code chunks:
+	<pre style="color: white">
+		<samp>
+		...
+		</samp>
+	</pre>
+
+Styling for comments in coed chunks:
+<strong><span style="color:#348589"> # ... </span></strong>
+-->
+
+<!-- Load Latex -->
+<script type="text/javascript"
+    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+</script>
+
+<section>
+	<h1>SETUP ENVIRONMENT AND LOAD DATA</h1>
+	<h2> Environment Setup </h2>
+		<body>
+			<pre style="color: white">
+				<strong><span style="color:#348589"> # You only need to do this once! </span></strong>
+				install.packages("ggplot2")
+				install.packages("survival")
+				install.packages("cowplot")
+				install.packages("devtools")
+			</pre>
+			<p>
+				First, load the necessary packages into your RStudio client or R environment using the <code>library()</code> function. 
+			</p>
+			<pre style="color: white">
+				<strong><span style="color:#348589"># Notice that the names aren't strings here</span></strong>
+				<samp>
+					library(ggplot2)
+					library(survival)	
+					library(cowplot)
+					library(devtools)
+				</samp>
+			</pre>
+			<p>
+				 The <code>survival</code> package contains necessary survival analysis related functions and classes that will be used throughout this project. We will use the <code>ggkm</code> package to display visuals of our survival curves. The package gets its name from  <code>ggplot</code>, which is also one of its dependancies. The <code>cowplot</code> package provides an aesthetic appeal to <code>ggplot2</code>, allowing to group plots and publicize them as shown later in this project. <b>Please note that</b> <code>ggkm</code> is not on CRAN, so we will need to load it using the <code>devtools</code> library--specifically the <code>install_github()</code> function. Run the two lines below to install and attach the package.
+			</p>
+			<pre style="color: white">
+				<samp>
+					devtools::install_github("sachsmc/ggkm")
+					library(ggkm)
+				</samp>
+			</pre>
+			<p>
+				Finally, as our team was working through this project we came across <b>this</b> great R-Bloggers post where FIRSTNAME LASTNAME created a great function that takes in a <code>survival</code> object and creates great plots of <b>Kaplan-Meier Estimates</b>. The function is lengthy so we won't post it here directly, but head right over to <b>the post</b> and Ctrl-C + Ctrl-V that big sucker!
+			</p>
+		</body>
+	<h2>About The Data</h2>
+		<body>
+			<p>
+				Our dataset comes from a longitudinal study conducted in the United States. Researchers observed the time until divorce of 3371 couples, and tracked three covariates listed below. The data's time variable is measured in years with up to three decimals of precision. The event indicator is labeled 0 for censorship, and 1 for divorce. <b>Click here</b> to head over to the exact site we got it from.
+			</p>
+			<ul>
+				<li>
+					The husband's education level, <em>edu</em>, coded as...
+					<ul>
+					<li>0 for less than 12 years (only high school)</li>
+					<li>1 for 12 to 15 years (only bachelors or equivalent)</li> 
+					<li>2 for 16 or more years (some form of graduate studies)</li> 
+					</ul>
+				</li>
+				<li>
+					The husband's race, <em>hblack</em>, coded as...
+					<ul>
+						<li>1 if the husband is black</li>
+						<li>0 otherwise</li>
+					</ul>
+				</li>
+				<li>
+					Whether or not both partners are black, <em>mixed</em>, coded as...
+					<ul>
+						<li>1 if <s>both</s> partners are <s>not</s> black</li>
+						<li>0 if one partner is black, and the other is not</li>
+					</ul>
+				</li>
+			</ul>
+			<p>
+				Very soon we will encode two new variables from the existing data, <em>wblack</em> and <em>couple</em>.
+			</p>
+			<ul>
+				<li>
+					The wife's race, <em>wblack</em>, coded as...
+					<ul>
+						<li>1 if the wife is black</li>
+						<li>0 otherwise</li>
+					</ul>
+				</li>
+				<li>
+					The couple's racial makeup, <em>couple</em>, encoded as...
+					<ul>
+						<li>BB if both are black</li>
+						<li>BO if the husband is black, and the wife is not</li>
+						<li>OB if the wife is black, and the husband is not</li>
+						<li>OO if both are not black</li>
+					</ul>
+				</li>
+			</ul>
+		<h2>Loading The Data</h2>
+		<p>
+			We renamed the covariates in order to make them more phonetic but feel free to encode the covariates to whatever you see fit... just make sure you're consistent throughout! This dataset resides as a text file and can be loaded into your R workspace using the <code>read.table()</code> function. If you haven't downloaded the data yet, you can do so <a href="http://data.princeton.edu/wws509/datasets/#divorce">here.</a>
+		</p>
+		<pre style="color: white">
+			<samp>
+			<strong><span style="color:#348589"># Don't forget to set the working directory!</span></strong>
+			colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
+			divorce <- read.table(file="divorce.txt", header=F, col.names=colNames)
+			</samp>
+		</pre>
+		<p>
+			  Next, coerce the covariates into factors so you can group them as categories, not numerical values. If we leave them as numeric types, then we're forcing an arbitrary distance metric on the variables. For example, the levels of <em>edu</em> are {0, 1, 2}. As numeric types, we're saying that a high-school education is two units less than a graduate education... But two <strong>what</strong>? It doesn't make any sense, so we encode them as categorical values instead and remove any ordinality.
+		</p>
+		<pre style="color: white">
+			<samp>
+			divorce$edu <- as.factor(divorce$edu) 
+			divorce$hblack <- as.factor(divorce$hblack)
+			divorce$mixed <- as.factor(divorce$mixed)
+			</samp>
+		</pre>
+		<p>
+			Now the data is loaded into our R session, and you can check by running commands like <code>head(divorce)</code> or <code>summary(divorce)</code> in the RStudio console. Once you're ready, we need to define some functions that will create new covariates from the current dataset. Specifically, we will call them <code>wblack</code> and <code>couple</code>. We wrote both functions to take in the entire <code>divorce</code> dataframe and return a new one with the columns. In practice this leaves a pretty big memory footprint, so you could rewrite the function to be more efficient by subsetting the input dataframe to the relevant columns... or use Python. <small>boom roasted</small>
+		</p>
+		<pre style="color: white">
+			<samp>
+			femalecol <- function(dataframe){
+
+  				dataframe$wblack <- as.factor(    
+			    ifelse(dataframe$hblack == dataframe$mixed & dataframe$hblack == 1, 0, 
+			           ifelse(dataframe$hblack == 1 & dataframe$mixed == 0, 1,
+			                  ifelse(dataframe$hblack == 0 & dataframe$mixed == 1, 1, 0)))
+			  
+			    )
+			  return(dataframe)
+			}
+
+			couple_column <- function(dataframe){
+  				dataframe$couple <- as.factor(
+    				ifelse(dataframe$hblack == 1 & dataframe$wblack == 1, "BB", 
+           				ifelse(dataframe$hblack == 1 & dataframe$wblack == 0, "BO", 
+                  			ifelse(dataframe$hblack == 0 & dataframe$wblack == 1, "OB", "OO")))
+                  	)
+  				return(dataframe)
+  			}
+			</samp>
+		</pre>
+		<p>
+			Now that the functions are defined, all we need to do is call them. If you're hazy on defining functions in R, <a href="http://www.statmethods.net/management/userfunctions.html">head here</a>. If the nested <code>ifelse()</code> calls were tricky, check out <a href="http://stackoverflow.com/questions/18012222/nested-ifelse-statement-in-r">this StackOverflow discussion</a>.
+		</p>
+		<pre style="color: white">
+			<samp>
+			divorce <- femalecol(divorce)
+			divorce <- couple_column(divorce)
+			</samp>
+		</pre>
+		<p>
+			Great! Check to make sure the columns are added by running another <code>head(divorce)</code> in the RStudio Console. Now that the data is loaded, checked, and transformed we can move on to the exploratory survival analysis! 
+		</p>
+		</body>
+</section>
+<section>
+	<h1>THE KAPLAN-MEIER ESTIMATOR</h1>
+	<body>
+		<p>
+			
+		</p>
+	</body>
+</section>
+<section>
+	<h1>THE COX PROPORTIONAL HAZARDS MODEL</h1>
+	<body>
+		<p>
+			
+		</p>
+	</body>
+</section>
+<section>
+	<h1>COVARIATE STRATIFICATION</h1>
+	<body>
+		<p>
+			
+		</p>
+	</body>
+</section>
+<section>
+	<h1>SUMMARY AND RESOURCES</h1>
+	<body>
+		<p>
+			
+		</p>
+	</body>
+</section>
+
