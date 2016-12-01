@@ -8,7 +8,7 @@ Styling for code chunks:
 		</samp>
 	</pre>
 
-Styling for comments in coed chunks:
+Styling for comments in code chunks:
 <strong><span style="color:#348589"> # ... </span></strong>
 -->
 
@@ -168,7 +168,85 @@ Styling for comments in coed chunks:
 	<h1>THE KAPLAN-MEIER ESTIMATOR</h1>
 	<body>
 		<p>
-			
+			To estimate and visualize the Survival Function, we will use a well known method, known as the Kaplan-Meier (KM) estimate. This  Now let's get our <code>dataframe</code> into the proper format for survival analysis. To do so, we will use some of the functions from the <code>surival</code> package. To start off, let's quickly cover some functions we'll use.
+			<ul>
+				<li>
+					<code>Surv()</code>: This function is returns a <code>survival</code> object and is used to coerce the time and status variables in the dataframe to later use them as the outcome of the survival function.
+				</li>
+				<li>
+					<code>survfit()</code>: This function takes the <code>Surv()</code> object as an input along with an <a href="https://ww2.coastal.edu/kingw/statistics/R-tutorials/formulae.html">R formula</a>. Then it produces a Kaplan Meier estimate based on the formula. Using <code>Survfit(<em>survival_object</em> ~ 1)</code> will produce a base KM estimate, meaning it will not fit a model with any covariates, only an intercept.
+				</li>
+			</ul>
+		</p>
+		<pre style="color: white">
+			<samp>
+			divorcefit <- Surv(time = divorce, event = divorce, data = divorce)
+
+			divorceKM <- survfit(divorcefit ~ 1)
+			educateKM <- survfit(divorcefit ~ divorce$edu)
+			mixedKM <- survfit(divorcefit ~ divorce$mixed)
+			coupleKM <- survfit(divorcefit ~ divorce$couple)
+
+			<strong><span style="color:#348589"> # Now let's make some nice ggplots of the KM estimates </span></strong>
+
+			a <- ggsurv(divorceKM, plot.cens = F) +
+			  ggtitle("Baseline Model") +
+			  ylab("Survival Probability") +
+			  xlab("Time in Years") + ylab("Probability")
+
+			b <- ggsurv(educateKM, plot.cens = F) +
+			  ggtitle("Estimates by Education Level") +
+			  ylab("Survival Probability") +
+			  xlab("Time in Years") +
+			  theme(legend.title = element_blank()) + ylab("Probability")
+
+			c <- ggsurv(mixedKM, plot.cens = F) +
+			  ggtitle("Estimates of Mixed Race Couples") +
+			  ylab("Survival Probability") +
+			  xlab("Time in Years") +
+			  theme(legend.title = element_blank()) + ylab("Probability")
+
+			d <- ggsurv(coupleKM, plot.cens = F) +
+			  ggtitle("Estimates by Racial Makeup") +
+			  ylab("Survival Probability") +
+			  xlab("Time in Years") +
+			  theme(legend.title = element_blank()) + ylab("Probability")
+
+			plot_grid(a,b,c,d nrow = 2, ncol = 2, label_size = 10)
+			</samp>
+		</pre>
+		<p>
+			 -- INSERT KM PLOTS HERE. -- <img src="">
+		</p>
+		<p>
+			Let's talk about what we're seeing here. The KM estimator fits a step-function to the survival data, but since we have so many observations the lines almost appear smooth. The first plot explores the survival curve of every couple in aggregate. Then, the following plots explore the survival curves in different groups. Here is a breakdown of the components we're seeing in the plot.
+			<ul>
+				<li>
+					<strong>Y-axis</strong>: This refers to the probability of divorce at a certain time on the X-axis.
+				</li>
+				<li>
+					<strong>Jumps</strong>: The jumps in the plots represent where a failure occurred. In terms of our data this refers to where a married couple divorced.
+				</li>
+				<li>
+					<strong>Marks</strong>: The red marks indicate where a censored observation occurred. This means either someone left the study, did not get divorced, or the marriage ended for a reason outside of divorce. We chose to use <code>plot.cens=F</code> in our <code>ggplot</code> code above because the graph gets very messy as we have a lot of observations.
+				</li>
+			</ul>
+			In order to calculate the Kaplan Meier estimates, the <code>survfit()</code> function performs some calculations at every time interval. Let's take a look at the estimates for the second education factor level. To do the calculations, the function measures the following metrics at each time there is a failure:
+			<ul>
+				<li>
+					<strong>n.event</strong>: Number of failures at that time. Here the column is mostly filled with "1" because the <code>years</code> variable is so precise. If it only went to one decimal point, we may see more divorces occur per row.
+				</li>
+				<li>
+					<strong>n.risk</strong>: The number of subjects still at risk by the end of the time interval.
+				</li>
+				<li>
+					<strong>time</strong>: The time that an event (divorce) occurred. Again, since the <code>years</code> variable is so precise we don't see many instances of multiple failures per time interval.
+				</li>
+				<li>
+					<strong>survival</strong>: The survival probability for that time. (number at risk- number of failures)/(number still at risk)
+				</li>
+			</ul>
+			<strong>-- PUT THE OUTPUT OF THE KM FOR EDU0 HERE --</strong>
 		</p>
 	</body>
 </section>
@@ -176,7 +254,7 @@ Styling for comments in coed chunks:
 	<h1>THE COX PROPORTIONAL HAZARDS MODEL</h1>
 	<body>
 		<p>
-			
+			<!-- Faraz is working on this part.-->
 		</p>
 	</body>
 </section>

@@ -22,11 +22,13 @@
 		The hazard rate is defined as the rate of failure over a given time. It gives us a measure on how <em>bad</em> things are; a large hazard rate means that the subjects are failing very quickly. It is defined as...
 	</p>
 	<p>
+		<!-- Make image for this Latex.
 		\begin{align}
 		h(t) &= \lim_{ \Delta t \rightarrow 0}  \frac{P(t < T \leq   t+\Delta t |T \geq t  )}{ \Delta t} \\
 			 &= \frac{ f(t) }{ 1-F(t) } \\
 			 &= \frac{ f(t) }{ S(t) }
-		\end{align}
+		\end{align} 
+		-->
 	</p>
 	<p>
 		Where T is a random variable describing the waiting time between events, or survival time. The output of the hazard function is not technically a probability, as it can exceed 1 in some cases. 
@@ -34,11 +36,13 @@
 	<p>
 		The survival function, S(t), describes the probability of surviving past some time t. You can also interpret it as the probability of surviving to some time, t, without experiencing the event. We can define it as...
 	</p>
-	<p>
+	<p> 
+		<!-- Make image for this Latex.
 		\begin{align}
 			S(t) = P(T > t) &= 1 - F(t) \\
 			&= 1 - \int_{-\infty}^{t}f(x)dx = \int_{t}^{\infty}f(x)dx
 		\end{align}
+		-->
 	</p>
 	<p>
 		Where f(t) is the probability distribution of those waiting times and F(t) is the cumulative probability function, or CDF, of f(t). That was a whole lot of math, so let’s get to the R code you came here for!
