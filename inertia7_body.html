@@ -12,266 +12,387 @@ Styling for comments in code chunks:
 <strong><span style="color:#348589"> # ... </span></strong>
 -->
 
-<!-- Load Latex -->
-<script type="text/javascript"
-    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
-</script>
+<body>
+	<!-- Load Latex -->
+	<script type="text/javascript"
+	    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+	</script>
 
-<section>
-	<h1>SETUP ENVIRONMENT AND LOAD DATA</h1>
-	<h2> Environment Setup </h2>
-		<body>
-			<pre style="color: white">
-				<strong><span style="color:#348589"> # You only need to do this once! </span></strong>
-				install.packages("ggplot2")
-				install.packages("survival")
-				install.packages("cowplot")
-				install.packages("devtools")
-			</pre>
+	<section>
+		<h1>BASICS OF SURVIVAL ANALYSIS</h1>
+		<p>
+			You might be able to guess that for each person, animal, system, or married couple we need a measurement of the time that they survived. But we also need to record an indicator variable describing whether or not they experienced the event. In simple survival analysis, there are two outcomes for each subject:
+		</p>
+		<p>
+			<ol>
+				<li>Failure or death is represented by a 1</li>
+				<li>Non-failure is represented by a 0</li>
+			</ol>
+		</p>
+			The second outcome is called <a href="https://en.wikipedia.org/wiki/Censoring_(statistics)">censorship</a>. This means that the researchers don't know whether there was a failure for that subject because the experiment ended when the subject was still alive, or the subject left the study prematurely for other reasons. Now let's discuss some terminology in survival analysis.
+		</p>
+		<p>
+			The hazard rate is defined as the rate of failure over a given time. Put simply, it gives us a measure of how <em>bad</em> things are; a large hazard rate means that the subjects are failing very quickly. It is defined as...
+		</p>
+		<p style="text-align: center;"> 
+			$$
+			\begin{{align}}
+			h(t) &= \lim_{{ \Delta t \rightarrow 0}}
+							\frac{{P(t < T \leq   t+\Delta t |T \geq t  )}}{{ \Delta t}} \\
+				 &= \frac{{ f(t) }}{{ 1-F(t) }} \\
+				 &= \frac{{ f(t) }}{{ S(t) }}
+			\end{{align}}
+			$$
+		</p>
+		<p>
+			Where \( T \) is a random variable describing the waiting time between events. The output of the hazard function is not technically a probability, as it can exceed 1 in some cases. 
+		</p>
+		<p>
+			The <a href="https://en.wikipedia.org/wiki/Survival_function">survival function</a>, \( S(t) \), describes the probability of surviving past some time \( t \). You can also interpret it as the probability of surviving to some \( t \) without experiencing the event. We can define it as...
+		</p>
+		<p style="text-align: center;">
+			$$ 
+			\begin{{align}}
+				S(t) = P(T > t) &= 1 - F(t) \\
+				&= 1 - \int_{{ -\infty }}^{{ t }} f(x)dx = \int_{{ t }}^{{\infty}}f(x)dx
+			\end{{align}}
+			$$
+		</p>
+		<p>
+			Where \(f(t)\) is the probability distribution of those waiting times and \(F(t)\) is the <a href="https://en.wikipedia.org/wiki/Cumulative_distribution_function">cumulative probability function</a>, or CDF, of \(f(t)\). Lastly, the survival function is <a href="https://en.wikipedia.org/wiki/Monotonic_function">monotonically decreasing</a>, meaning the graph never increases as we from look left to right. Now that was a whole lot of math, so let’s get to the R code you came here for!
+		</p>
+	</section>
+	<section>
+		<h1>SETUP ENVIRONMENT AND LOAD DATA</h1>
+		<h2> Environment Setup </h2>
+		<p>
+			The following code chunks install and attach the R packages we will use for the project. <a href="http://jtleek.com/modules/01_DataScientistToolbox/02_09_installingRPackages/#1">This slideshow</a> by Professor Jeffrey Leek provides additional information on these steps. Let's install the packages we need from <a href="https://cran.r-project.org/web/packages/available_packages_by_name.html">CRAN</a>, the Comprehensive R Archive Network.
+		</p>
+				<pre style="color: white">
+					<samp>
+<strong><span style="color:#348589"># We're downloading these packages from the internet, only needs to be done once per machine!</span></strong>
+install.packages("ggplot2")
+install.packages("survival")
+install.packages("cowplot")
+install.packages("devtools")
+					</samp>
+				</pre>
+				<p>
+					Next, load the packages into your RStudio client or R environment using the <code>library()</code> function. 
+				</p>
+				<pre style="color: white">
+					<samp>
+<strong><span style="color:#348589"># Notice that the package names aren't strings here</span></strong>
+<strong><span style="color:#348589"># These lines need to be run in every R session, unlike the code chunk above</span></strong>
+library(ggplot2)
+library(survival)	
+library(cowplot)
+library(devtools)
+					</samp>
+				</pre>
+				<p>
+					 The <code>survival</code> package contains necessary survival analysis related functions and classes that will be used throughout this project. We will use the <code>ggkm</code> package to display nice visuals of our survival curves. The package gets its name from  <code>ggplot</code>, which is also one of its dependancies. The <code>cowplot</code> package provides an aesthetic appeal to <code>ggplot2</code>, allowing us to group plots into grids as shown later in this project. <b>Please note that</b> <code>ggkm</code> is not on CRAN, so we will need to load it using the <code>devtools</code> library--specifically the <code>install_github()</code> function. Run the two lines below to install and attach the package.
+				</p>
+				<pre style="color: white">
+					<samp>
+devtools::install_github("sachsmc/ggkm")
+library(ggkm)
+					</samp>
+				</pre>
+				<p>
+					Finally, as our team was working through this project we came across <a href="https://www.r-statistics.com/2013/07/creating-good-looking-survival-curves-the-ggsurv-function/">this</a> great R-Statistics post where Edwin Thoen created a great function that takes in a <code>survival</code> object and creates great plots of <a href="https://en.wikipedia.org/wiki/Kaplan–Meier_estimator">Kaplan-Meier Estimates</a>. The function is lengthy so we won't post it here directly, but head right over to <a href="https://www.r-statistics.com/2013/07/creating-good-looking-survival-curves-the-ggsurv-function/">the post</a> and Ctrl+C, Ctrl+V that big sucker!
+				</p>
+		<h2>About The Data</h2>
+				<p>
+					Our dataset comes from a longitudinal study conducted in the United States. Researchers observed the time until divorce of 3371 couples, and tracked three covariates listed below. The data's time variable is measured in years with up to three decimals of precision. The event indicator is labeled 0 for censorship, and 1 for divorce. <a href="http://data.princeton.edu/wws509/datasets/divorce.dat">Click here</a> to get the data. You'll need to copy/paste it into a text editor on your computer, and save it as <code>divorce.txt</code>.
+				</p>
+				<ul>
+					<li>
+						The husband's education level, <em>edu</em>, coded as...
+						<ul>
+						<li>0 for less than 12 years (only high school)</li>
+						<li>1 for 12 to 15 years (only bachelors or equivalent)</li> 
+						<li>2 for 16 or more years (some form of graduate studies)</li> 
+						</ul>
+					</li>
+					<li>
+						The husband's race, <em>hblack</em>, coded as...
+						<ul>
+							<li>1 if the husband is black</li>
+							<li>0 otherwise</li>
+						</ul>
+					</li>
+					<li>
+						Whether or not both partners are black, <em>mixed</em>, coded as...
+						<ul>
+							<li>1 if <strong>both</strong> partners are <strong>not</strong> black</li>
+							<li>0 if <strong>one</strong> partner is black, and the other is not</li>
+						</ul>
+					</li>
+				</ul>
+				<p>
+					In the next section we will learn how to encode two new variables from the existing data, <em>wblack</em> and <em>couple</em>.
+				</p>
+				<ul>
+					<li>
+						The wife's race, <em>wblack</em>, coded as...
+						<ul>
+							<li>1 if the wife is black</li>
+							<li>0 otherwise</li>
+						</ul>
+					</li>
+					<li>
+						The couple's racial makeup, <em>couple</em>, encoded as...
+						<ul>
+							<li>BB if both are black</li>
+							<li>BO if the husband is black, and the wife is not</li>
+							<li>OB if the wife is black, and the husband is not</li>
+							<li>OO if both are not black</li>
+						</ul>
+					</li>
+				</ul>
+			<h2>Loading The Data</h2>
 			<p>
-				First, load the necessary packages into your RStudio client or R environment using the <code>library()</code> function. 
+				We renamed the covariates in order to make them more phonetic, but feel free to encode the covariates to whatever you see fit... just make sure you're consistent! This dataset resides as a text file and can be loaded into your R workspace using the <code>read.table()</code> function.
 			</p>
 			<pre style="color: white">
-				<strong><span style="color:#348589"># Notice that the names aren't strings here</span></strong>
 				<samp>
-					library(ggplot2)
-					library(survival)	
-					library(cowplot)
-					library(devtools)
+<strong><span style="color:#348589"># Don't forget to set the working directory!</span></strong>
+colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
+divorce <- read.table(file="divorce.txt", header=F, col.names=colNames)
 				</samp>
 			</pre>
 			<p>
-				 The <code>survival</code> package contains necessary survival analysis related functions and classes that will be used throughout this project. We will use the <code>ggkm</code> package to display visuals of our survival curves. The package gets its name from  <code>ggplot</code>, which is also one of its dependancies. The <code>cowplot</code> package provides an aesthetic appeal to <code>ggplot2</code>, allowing to group plots and publicize them as shown later in this project. <b>Please note that</b> <code>ggkm</code> is not on CRAN, so we will need to load it using the <code>devtools</code> library--specifically the <code>install_github()</code> function. Run the two lines below to install and attach the package.
+				Next, coerce the covariates into factors so you can group them as categories, not numerical values. If we leave them as numeric types, then we're forcing an arbitrary distance metric on the variables. For example, the levels of <em>edu</em> are <samp>0</samp>, <samp>1</samp>, and <samp>2</samp>. As numeric types, we're saying that a high-school education is two units less than a graduate education... But two <strong>what</strong>? It doesn't make any sense, so we encode them as categorical values instead which removes any ordinality.
 			</p>
 			<pre style="color: white">
 				<samp>
-					devtools::install_github("sachsmc/ggkm")
-					library(ggkm)
+divorce$edu <- as.factor(divorce$edu) 
+divorce$hblack <- as.factor(divorce$hblack)
+divorce$mixed <- as.factor(divorce$mixed)
 				</samp>
 			</pre>
 			<p>
-				Finally, as our team was working through this project we came across <b>this</b> great R-Bloggers post where FIRSTNAME LASTNAME created a great function that takes in a <code>survival</code> object and creates great plots of <b>Kaplan-Meier Estimates</b>. The function is lengthy so we won't post it here directly, but head right over to <b>the post</b> and Ctrl-C + Ctrl-V that big sucker!
+				Now the data is loaded into our R session, and you can check by running commands like <code>head(divorce)</code> or <code>summary(divorce)</code> in the RStudio console. Once you're ready, we need to define some functions that will create new covariates from the current dataset. Specifically, we will call them <code>wblack</code> and <code>couple</code>. We wrote both functions to take in the entire <code>divorce</code> dataframe and return a new one with the columns. In practice this leaves a pretty big memory footprint, so you could rewrite the function to be more efficient by subsetting the input dataframe to the relevant columns... or use Python... <small>boom roasted</small>
 			</p>
-		</body>
-	<h2>About The Data</h2>
-		<body>
+			<pre style="color: white">
+				<samp>
+femalecol <- function(dataframe){{
+  dataframe$wblack <- as.factor(
+    ifelse(dataframe$hblack == dataframe$mixed & dataframe$hblack == 1, 0,
+      ifelse(dataframe$hblack == 1 & dataframe$mixed == 0, 1,
+        ifelse(dataframe$hblack == 0 & dataframe$mixed == 1, 1, 0)))
+  
+    )
+  return(dataframe)
+}}
+
+couple_column <- function(dataframe){{
+  dataframe$couple <- as.factor(
+    ifelse(dataframe$hblack == 1 & dataframe$wblack == 1, "BB",
+      ifelse(dataframe$hblack == 1 & dataframe$wblack == 0, "BO",
+        ifelse(dataframe$hblack == 0 & dataframe$wblack == 1, "OB", "OO")))
+    )
+  return(dataframe)
+}}
+				</samp>
+			</pre>
 			<p>
-				Our dataset comes from a longitudinal study conducted in the United States. Researchers observed the time until divorce of 3371 couples, and tracked three covariates listed below. The data's time variable is measured in years with up to three decimals of precision. The event indicator is labeled 0 for censorship, and 1 for divorce. <b>Click here</b> to head over to the exact site we got it from.
+				Now that the functions are defined, all we need to do is call them. If you're hazy on defining functions in R, <a href="http://www.statmethods.net/management/userfunctions.html">head here</a>. If the nested <code>ifelse()</code> calls were tricky, check out <a href="http://stackoverflow.com/questions/18012222/nested-ifelse-statement-in-r">this StackOverflow discussion</a>.
 			</p>
-			<ul>
-				<li>
-					The husband's education level, <em>edu</em>, coded as...
-					<ul>
-					<li>0 for less than 12 years (only high school)</li>
-					<li>1 for 12 to 15 years (only bachelors or equivalent)</li> 
-					<li>2 for 16 or more years (some form of graduate studies)</li> 
-					</ul>
-				</li>
-				<li>
-					The husband's race, <em>hblack</em>, coded as...
-					<ul>
-						<li>1 if the husband is black</li>
-						<li>0 otherwise</li>
-					</ul>
-				</li>
-				<li>
-					Whether or not both partners are black, <em>mixed</em>, coded as...
-					<ul>
-						<li>1 if <s>both</s> partners are <s>not</s> black</li>
-						<li>0 if one partner is black, and the other is not</li>
-					</ul>
-				</li>
-			</ul>
+			<pre style="color: white">
+				<samp>
+divorce <- femalecol(divorce)
+divorce <- couple_column(divorce)
+				</samp>
+			</pre>
 			<p>
-				Very soon we will encode two new variables from the existing data, <em>wblack</em> and <em>couple</em>.
+				Great! Check to make sure the columns are added by running another <code>head(divorce)</code> in the RStudio Console. Now that the data is loaded, checked, and transformed we can move on to the exploratory survival analysis!
 			</p>
-			<ul>
-				<li>
-					The wife's race, <em>wblack</em>, coded as...
-					<ul>
-						<li>1 if the wife is black</li>
-						<li>0 otherwise</li>
-					</ul>
-				</li>
-				<li>
-					The couple's racial makeup, <em>couple</em>, encoded as...
-					<ul>
-						<li>BB if both are black</li>
-						<li>BO if the husband is black, and the wife is not</li>
-						<li>OB if the wife is black, and the husband is not</li>
-						<li>OO if both are not black</li>
-					</ul>
-				</li>
-			</ul>
-		<h2>Loading The Data</h2>
-		<p>
-			We renamed the covariates in order to make them more phonetic but feel free to encode the covariates to whatever you see fit... just make sure you're consistent throughout! This dataset resides as a text file and can be loaded into your R workspace using the <code>read.table()</code> function. If you haven't downloaded the data yet, you can do so <a href="http://data.princeton.edu/wws509/datasets/#divorce">here.</a>
-		</p>
-		<pre style="color: white">
-			<samp>
-			<strong><span style="color:#348589"># Don't forget to set the working directory!</span></strong>
-			colNames <- c("id", "edu", "hblack", "mixed", "years", "div")
-			divorce <- read.table(file="divorce.txt", header=F, col.names=colNames)
-			</samp>
-		</pre>
-		<p>
-			  Next, coerce the covariates into factors so you can group them as categories, not numerical values. If we leave them as numeric types, then we're forcing an arbitrary distance metric on the variables. For example, the levels of <em>edu</em> are {0, 1, 2}. As numeric types, we're saying that a high-school education is two units less than a graduate education... But two <strong>what</strong>? It doesn't make any sense, so we encode them as categorical values instead and remove any ordinality.
-		</p>
-		<pre style="color: white">
-			<samp>
-			divorce$edu <- as.factor(divorce$edu) 
-			divorce$hblack <- as.factor(divorce$hblack)
-			divorce$mixed <- as.factor(divorce$mixed)
-			</samp>
-		</pre>
-		<p>
-			Now the data is loaded into our R session, and you can check by running commands like <code>head(divorce)</code> or <code>summary(divorce)</code> in the RStudio console. Once you're ready, we need to define some functions that will create new covariates from the current dataset. Specifically, we will call them <code>wblack</code> and <code>couple</code>. We wrote both functions to take in the entire <code>divorce</code> dataframe and return a new one with the columns. In practice this leaves a pretty big memory footprint, so you could rewrite the function to be more efficient by subsetting the input dataframe to the relevant columns... or use Python. <small>boom roasted</small>
-		</p>
-		<pre style="color: white">
-			<samp>
-			femalecol <- function(dataframe){
+	</section>
+	<section>
+		<h1>THE KAPLAN-MEIER ESTIMATOR</h1>
+			<p>
+				To estimate and visualize the Survival Function, we will use a well known method, known as the <a href="https://en.wikipedia.org/wiki/Kaplan–Meier_estimator">Kaplan-Meier</a> (KM) estimate. But first, we need to get our <code>dataframe</code> into the proper format for survival analysis. To do so, we will use some of the functions from the <code>surival</code> package. Let's quickly cover some functions we'll use.
+				<ul>
+					<li>
+						<code>Surv()</code>: This function is returns a <code>survival</code> object and is used to coerce the time and status variables in the dataframe to later use them as the outcome of the survival function.
+					</li>
+					<li>
+						<code>survfit()</code>: This function takes the <code>Surv()</code> object as an input along with an <a href="https://ww2.coastal.edu/kingw/statistics/R-tutorials/formulae.html">R formula</a>. Then it produces a Kaplan Meier estimate based on the formula. Using <code>Survfit(<em>survival_object</em> ~ 1)</code> will produce a base KM estimate, meaning it will not fit a model with any covariates, only an intercept.
+					</li>
+				</ul>
+			</p>
+			<pre style="color: white">
+				<samp>
+divorcefit <- Surv(time = divorce, event = divorce, data = divorce)
 
-  				dataframe$wblack <- as.factor(    
-			    ifelse(dataframe$hblack == dataframe$mixed & dataframe$hblack == 1, 0, 
-			           ifelse(dataframe$hblack == 1 & dataframe$mixed == 0, 1,
-			                  ifelse(dataframe$hblack == 0 & dataframe$mixed == 1, 1, 0)))
-			  
-			    )
-			  return(dataframe)
-			}
+divorceKM <- survfit(divorcefit ~ 1)
+educateKM <- survfit(divorcefit ~ divorce$edu)
+mixedKM <- survfit(divorcefit ~ divorce$mixed)
+coupleKM <- survfit(divorcefit ~ divorce$couple)
 
-			couple_column <- function(dataframe){
-  				dataframe$couple <- as.factor(
-    				ifelse(dataframe$hblack == 1 & dataframe$wblack == 1, "BB", 
-           				ifelse(dataframe$hblack == 1 & dataframe$wblack == 0, "BO", 
-                  			ifelse(dataframe$hblack == 0 & dataframe$wblack == 1, "OB", "OO")))
-                  	)
-  				return(dataframe)
-  			}
-			</samp>
-		</pre>
-		<p>
-			Now that the functions are defined, all we need to do is call them. If you're hazy on defining functions in R, <a href="http://www.statmethods.net/management/userfunctions.html">head here</a>. If the nested <code>ifelse()</code> calls were tricky, check out <a href="http://stackoverflow.com/questions/18012222/nested-ifelse-statement-in-r">this StackOverflow discussion</a>.
-		</p>
-		<pre style="color: white">
-			<samp>
-			divorce <- femalecol(divorce)
-			divorce <- couple_column(divorce)
-			</samp>
-		</pre>
-		<p>
-			Great! Check to make sure the columns are added by running another <code>head(divorce)</code> in the RStudio Console. Now that the data is loaded, checked, and transformed we can move on to the exploratory survival analysis! 
-		</p>
-		</body>
-</section>
-<section>
-	<h1>THE KAPLAN-MEIER ESTIMATOR</h1>
-	<body>
-		<p>
-			To estimate and visualize the Survival Function, we will use a well known method, known as the Kaplan-Meier (KM) estimate. This  Now let's get our <code>dataframe</code> into the proper format for survival analysis. To do so, we will use some of the functions from the <code>surival</code> package. To start off, let's quickly cover some functions we'll use.
-			<ul>
-				<li>
-					<code>Surv()</code>: This function is returns a <code>survival</code> object and is used to coerce the time and status variables in the dataframe to later use them as the outcome of the survival function.
-				</li>
-				<li>
-					<code>survfit()</code>: This function takes the <code>Surv()</code> object as an input along with an <a href="https://ww2.coastal.edu/kingw/statistics/R-tutorials/formulae.html">R formula</a>. Then it produces a Kaplan Meier estimate based on the formula. Using <code>Survfit(<em>survival_object</em> ~ 1)</code> will produce a base KM estimate, meaning it will not fit a model with any covariates, only an intercept.
-				</li>
-			</ul>
-		</p>
-		<pre style="color: white">
-			<samp>
-			divorcefit <- Surv(time = divorce, event = divorce, data = divorce)
+<strong><span style="color:#348589"> # Now let's make some nice ggplots of the KM estimates </span></strong>
 
-			divorceKM <- survfit(divorcefit ~ 1)
-			educateKM <- survfit(divorcefit ~ divorce$edu)
-			mixedKM <- survfit(divorcefit ~ divorce$mixed)
-			coupleKM <- survfit(divorcefit ~ divorce$couple)
+a <- ggsurv(divorceKM, plot.cens = F) +
+  ggtitle("Baseline Model") +
+  ylab("Survival Probability") +
+  xlab("Time in Years") + ylab("Probability")
 
-			<strong><span style="color:#348589"> # Now let's make some nice ggplots of the KM estimates </span></strong>
+b <- ggsurv(educateKM, plot.cens = F) +
+  ggtitle("Estimates by Education Level") +
+  ylab("Survival Probability") +
+  xlab("Time in Years") +
+  theme(legend.title = element_blank()) + ylab("Probability")
 
-			a <- ggsurv(divorceKM, plot.cens = F) +
-			  ggtitle("Baseline Model") +
-			  ylab("Survival Probability") +
-			  xlab("Time in Years") + ylab("Probability")
+c <- ggsurv(mixedKM, plot.cens = F) +
+  ggtitle("Estimates of Mixed Race Couples") +
+  ylab("Survival Probability") +
+  xlab("Time in Years") +
+  theme(legend.title = element_blank()) + ylab("Probability")
 
-			b <- ggsurv(educateKM, plot.cens = F) +
-			  ggtitle("Estimates by Education Level") +
-			  ylab("Survival Probability") +
-			  xlab("Time in Years") +
-			  theme(legend.title = element_blank()) + ylab("Probability")
+d <- ggsurv(coupleKM, plot.cens = F) +
+  ggtitle("Estimates by Racial Makeup") +
+  ylab("Survival Probability") +
+  xlab("Time in Years") +
+  theme(legend.title = element_blank()) + ylab("Probability")
 
-			c <- ggsurv(mixedKM, plot.cens = F) +
-			  ggtitle("Estimates of Mixed Race Couples") +
-			  ylab("Survival Probability") +
-			  xlab("Time in Years") +
-			  theme(legend.title = element_blank()) + ylab("Probability")
+plot_grid(a,b,c,d nrow = 2, ncol = 2, label_size = 10)
+				</samp>
+			</pre>
+			<p>
+				 <strong> -- INSERT KM PLOTS HERE. -- </strong>
+				 <img src="">
+			</p>
+			<p>
+				Let's talk about what we're seeing here. The KM estimator fits a <a href="https://en.wikipedia.org/wiki/Step_function">step-function</a> to the survival data, but since we have so many observations the lines almost appear smooth in some plots. The first plot explores the survival curve of every couple in aggregate. The remaining plots explore the survival curves for the different groups. Here is a breakdown of the components we're seeing in the plot.
+				<ul>
+					<li>
+						<strong>Y-axis</strong>: This refers to the probability of divorce at a certain time on the X-axis.
+					</li>
+					<li>
+						<strong>Jumps</strong>: The jumps in the plots represent where a failure occurred. In terms of our data this refers to where a married couple divorced.
+					</li>
+					<li>
+						<strong>Crosses</strong>: On a KM plot, red crosses indicate where a censored observation occurred. This means either someone left the study, did not get divorced, or the marriage ended for a reason outside of divorce. We chose to use <code>plot.cens=F</code> in our ggplots because there are a lot of censored observations, and the plots get very messy.
+					</li>
+				</ul>
+				In order to calculate the Kaplan Meier estimates, the <code>survfit()</code> function performs some calculations at every time interval. Let's take a look at the estimates for the second education factor level. To do the calculations, the function measures the following metrics at each time there is a failure:
+				<ul>
+					<li>
+						<strong>n.event</strong>: Number of failures at that time. Here the column is mostly filled with "1" because the <code>years</code> variable is so precise. If it only went to one decimal point, we may see more divorces occur per row.
+					</li>
+					<li>
+						<strong>n.risk</strong>: The number of subjects still at risk by the end of the time interval.
+					</li>
+					<li>
+						<strong>time</strong>: The time that an event (divorce) occurred. Again, since the <code>years</code> variable is so precise we don't see many instances of multiple failures per time interval.
+					</li>
+					<li>
+						<strong>survival</strong>: The survival probability for that time. (number at risk- number of failures)/(number still at risk)
+					</li>
+				</ul>
+				<strong>-- PUT THE OUTPUT OF <br> THE KM FOR EDU0 HERE --</strong>
+			</p>
+	</section>
+	<section>
+		<h1>THE COX PROPORTIONAL HAZARDS MODEL</h1>
+			<p>
+				Up to now we haven't had the means to find any <em>numerical</em> differences between the racial and educational groups in our data. We can plainly see from our Kaplan Meier plots that some couples divorce much faster than others... but exactly how much faster? To answer that question we need to introduce the <a href="https://en.wikipedia.org/wiki/Proportional_hazards_model">Cox proportional hazards model</a>. In the Cox model, we assume that the hazard rate for one group is proportionally related to that of another group. To put it mathematically, we assume that... 
+			</p>
 
-			d <- ggsurv(coupleKM, plot.cens = F) +
-			  ggtitle("Estimates by Racial Makeup") +
-			  ylab("Survival Probability") +
-			  xlab("Time in Years") +
-			  theme(legend.title = element_blank()) + ylab("Probability")
-
-			plot_grid(a,b,c,d nrow = 2, ncol = 2, label_size = 10)
-			</samp>
-		</pre>
-		<p>
-			 -- INSERT KM PLOTS HERE. -- <img src="">
-		</p>
-		<p>
-			Let's talk about what we're seeing here. The KM estimator fits a step-function to the survival data, but since we have so many observations the lines almost appear smooth. The first plot explores the survival curve of every couple in aggregate. Then, the following plots explore the survival curves in different groups. Here is a breakdown of the components we're seeing in the plot.
-			<ul>
-				<li>
-					<strong>Y-axis</strong>: This refers to the probability of divorce at a certain time on the X-axis.
-				</li>
-				<li>
-					<strong>Jumps</strong>: The jumps in the plots represent where a failure occurred. In terms of our data this refers to where a married couple divorced.
-				</li>
-				<li>
-					<strong>Marks</strong>: The red marks indicate where a censored observation occurred. This means either someone left the study, did not get divorced, or the marriage ended for a reason outside of divorce. We chose to use <code>plot.cens=F</code> in our <code>ggplot</code> code above because the graph gets very messy as we have a lot of observations.
-				</li>
-			</ul>
-			In order to calculate the Kaplan Meier estimates, the <code>survfit()</code> function performs some calculations at every time interval. Let's take a look at the estimates for the second education factor level. To do the calculations, the function measures the following metrics at each time there is a failure:
-			<ul>
-				<li>
-					<strong>n.event</strong>: Number of failures at that time. Here the column is mostly filled with "1" because the <code>years</code> variable is so precise. If it only went to one decimal point, we may see more divorces occur per row.
-				</li>
-				<li>
-					<strong>n.risk</strong>: The number of subjects still at risk by the end of the time interval.
-				</li>
-				<li>
-					<strong>time</strong>: The time that an event (divorce) occurred. Again, since the <code>years</code> variable is so precise we don't see many instances of multiple failures per time interval.
-				</li>
-				<li>
-					<strong>survival</strong>: The survival probability for that time. (number at risk- number of failures)/(number still at risk)
-				</li>
-			</ul>
-			<strong>-- PUT THE OUTPUT OF THE KM FOR EDU0 HERE --</strong>
-		</p>
-	</body>
-</section>
-<section>
-	<h1>THE COX PROPORTIONAL HAZARDS MODEL</h1>
-	<body>
-		<p>
-			<!-- Faraz is working on this part.-->
-		</p>
-	</body>
-</section>
-<section>
-	<h1>COVARIATE STRATIFICATION</h1>
-	<body>
-		<p>
-			
-		</p>
-	</body>
-</section>
-<section>
-	<h1>SUMMARY AND RESOURCES</h1>
-	<body>
-		<p>
-			
-		</p>
-	</body>
-</section>
-
+			<p style="text-align: center;">
+				\begin{{aligned}}
+	        	h_{{ 0 }}(t) \gamma &= h_{{ 1 }}(t) \\
+				\gamma &= \frac{{ h_{{ 1 }}(t)}}{{ h_{{ 0 }} (t) }}
+				\end{{aligned}}
+	        </p>
+	        <p>
+	        	Where \( h_{{0}}(t) \) is the baseline hazard rate and \( \gamma \) is the ratio between the two hazard ratios. Keep in mind that this can generalize to multiple groups; we would simply have a \( \gamma \) for each ratio! Since \( \gamma \) is the interesting part, let's explore it further. In the following algebra, <em>i</em> and <em>j</em> represent two arbitrary groups. Also note that the survival function can also be written as...
+	        </p>
+	        <p style="text-align: center;">
+	        	$$ S(t) = e^{{- \int_{{0}}^{{t}} h(s) \mathrm{{ d }} s }} $$
+	        </p>
+	        <p>
+	        	but the proof is outisde the scope of this project tutorial. If you would like to see the proof, refer to this great <a href="http://stats.stackexchange.com/questions/58046/proof-of-relationship-between-hazard-rate-probability-density-survival-functio">StackExchange post</a>. Otherwise just take it on faith!
+	          <p style="text-align: center;">
+	       		$$
+	        	\begin{{aligned}} 
+					\gamma &= \frac{{ h_{{ i }}(t) }}{{ h_{{ j }} (t) }} \\
+              		&= \frac{{ h_{{ i }}(t) }}{{ h_{{ j }} (t) }} \\
+              		&= \frac{{ h_0(t)exp(\beta_{{ 1 }}x_{{ i1 }} + \ldots +\beta_{{ k }}x_{{ ik }}) }}{{  h_0(t)exp(\beta_{{ 1 }}x_{{ j1 }} + \ldots +\beta_{{ k }} x_{{ ik }} )  }} \\
+              		&= \frac{{ exp(\beta_{{ 1 }}x_{{ i1 }} + \ldots +\beta_{{ k }}x_{{ ik }}) }}{{exp(\beta_{{1}}x_{{ j1 }} + \ldots +\beta_{{ k }}x_{{ ik }} ) }} \\
+              		&= exp(\beta_{{ 1 }}(x_{{ i1 }} - x_{{ j1 }}) +  \ldots +\beta_{{ k }}( x_{{ ik }} - x_{{ jk }} ) ) \\
+				\end{{aligned}}
+				$$
+	        </p>
+	        	Our final equation above shows that \( \gamma \) does not depend on time at all! This means that at any chosen time, the two hazard rates of two groups have the same proportion. If we find that the \( \gamma )\ between two groups is one, that means there is no difference between the groups' hazard rates. This is analogous to finding a coefficient equal to zero in linear regression.
+	        </p>
+	        <p>
+	        	Now let's turn to R for an example, we will continue using the survival package. To fit a Cox PH model to our data, we will use <code>coxph()</code> along with <code>Surv()</code> from the previous section. The chunks below fit a basic Cox PH model with the <em>edu</em> variable as its only covariate.
+	        </p>
+	        <pre style="color: white">
+				<samp>
+base_cox_ph <- coxph(Surv(years, div) ~ edu, data = divorce)
+print(base_cox_ph)
+	        	</samp>
+		    </pre>
+	        <p>
+	        	The p-values are testing the hypothesis that the coefficients, or \( \beta \) s, are equal to zero because a \( \beta = 0 \) would mean that the two groups have equal hazard rates. You may notice that "edu0" is <strong>not</strong> in the output. That is because "edu0" is in the ratio of both the "edu1" and "edu2" rows, so that means marriages which fall into education group 1 divorce 1.27 times faster than marriages in education group 0.
+	        </p>
+	</section>
+	<section>
+		<h1>COVARIATE STRATIFICATION</h1>
+			<p>
+				The big assumption of the Cox PH model is that the hazard rates between groups have a constant proportionality over time. This is a pretty strong assumption to make, so we need to test our covariates to ensure they follow this. If they do violate the assumption, not all hope is lost--we can stratify them! A stratified variable in a Cox PH model is one that is not assigned a coefficient. Instead, the data is split between the factors of the stratified variables and the model is fit within each group of the stratified variable. <br> <em>A word of caution:</em> do not stratify a variable with many categories, or a continious scale. Remember that the model still needs to be fit within each group of the stratified variable, so if there are too many groups the data will be thinned out and uninterpretable! <br> <br>
+				Here we fit our Cox model using education and couple as it was our best model before testing for violations of the assumption. We use <code>cox.zph()</code> to test the assumption.
+			</p>
+			<pre style="color: white">
+				<samp>
+cox_couple_coxph <- coxph(Surv(years, div) ~ edu + couple, data=divorce)
+edu_couple_zph <- cox.zph(cox_couple_coxph)
+edu_couple_zph
+				</samp>
+			</pre>
+			<pre style="color: white">
+				<samp>
+<strong><span style="color:#348589">
+##          rho      chisq       p
+## edu1     0.0307   0.995 0.31845
+## edu2     0.0516   2.818 0.09321
+## coupleBO -0.0513  2.720 0.09913
+## coupleOB -0.0346  1.239 0.26564
+## coupleOO -0.0922  9.031 0.00265
+## GLOBAL        NA 11.411 0.04382
+				</span></strong>
+				</samp>
+			</pre>
+			<p>
+				The p-values in the output are testing the hypothesis that the Schoenfeld Residuals correlate with time. So a small p-value indicates that the covariate <strong>does</strong> violate the constant proportionality assumption. The <code>GLOBAL</code> row tests if the model as a whole violates the assumption, which in this case it does thanks to <em>couple</em>. Now let's stratify it!
+			</p>
+			<pre style="color: white">
+edu_strata_coxph <- coxph(Surv(years, div) ~ edu + strata(couple), data          = divorce) 
+edu_strata_zph <- cox.zph(edu_strata_coxph)
+edu_strata_zph
+			</pre>
+			<pre style="color: white">
+				<samp>
+				<strong><span style="color:#348589">
+##           rho chisq      p
+## edu1   0.0332  1.16 0.2804
+## edu2   0.0521  2.87 0.0904
+## GLOBAL     NA  3.07 0.2151
+				</span></strong>
+				</samp>
+			</pre>
+			<p>
+				Fantastic, none of the levels within <em>edu</em> violate the assumption when we stratify <em>couple.</em>
+			</p>
+	</section>
+	<section>
+		<h1>SUMMARY AND RESOURCES</h1>
+			<p>
+				
+			</p>
+	</section>
+</body>

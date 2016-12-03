@@ -1,53 +1,9 @@
-<!-- Load Latex -->
-<script type="text/javascript"
-    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
-</script>
-
-<section>
-	<h1>Concepts of Survival Analysis</h1>
-	<p>
-		Survival Analysis is a field of statistics concerned with analyzing the amount of time until an event occurs. Common applications of survival analysis involve investigating the time until a death of a subject in a medical study or the time until the failure of a mechanical system. In this project we will analyze the failure rates of marriages, “failure” meaning a divorce. As you can tell this is a very happy field of research!
-	</p>
-	<p>
-		As you might guess... for each person, animal, system, or married couple we need a measurement of the time they survived. But we also need to record an indicator variable describing whether or not they experienced the event. In simple survival analysis, there are two outcomes for each subject:
-	</p>
-		<ol>
-			<li>Failure or death is represented by a 1</li>
-			<li>Non-failure is represented by a 0</li>
-		</ol>
-	<p>
-		The second outcome is called censorship. This means that the researchers don't know whether there was a failure for that subject because the experiment ended and the subject/experiment was still alive, or the person left the study prematurely for other reasons. Now let's discuss some terminology in survival analysis.
-	</p>
-	<p>
-		The hazard rate is defined as the rate of failure over a given time. It gives us a measure on how <em>bad</em> things are; a large hazard rate means that the subjects are failing very quickly. It is defined as...
-	</p>
-	<p>
-		<!-- Make image for this Latex.
-		\begin{align}
-		h(t) &= \lim_{ \Delta t \rightarrow 0}  \frac{P(t < T \leq   t+\Delta t |T \geq t  )}{ \Delta t} \\
-			 &= \frac{ f(t) }{ 1-F(t) } \\
-			 &= \frac{ f(t) }{ S(t) }
-		\end{align} 
-		-->
-	</p>
-	<p>
-		Where T is a random variable describing the waiting time between events, or survival time. The output of the hazard function is not technically a probability, as it can exceed 1 in some cases. 
-	</p>
-	<p>
-		The survival function, S(t), describes the probability of surviving past some time t. You can also interpret it as the probability of surviving to some time, t, without experiencing the event. We can define it as...
-	</p>
-	<p> 
-		<!-- Make image for this Latex.
-		\begin{align}
-			S(t) = P(T > t) &= 1 - F(t) \\
-			&= 1 - \int_{-\infty}^{t}f(x)dx = \int_{t}^{\infty}f(x)dx
-		\end{align}
-		-->
-	</p>
-	<p>
-		Where f(t) is the probability distribution of those waiting times and F(t) is the cumulative probability function, or CDF, of f(t). That was a whole lot of math, so let’s get to the R code you came here for!
-	</p>
-
-
-
-
+<!-- Abstract -->
+<body>
+	<section>
+		<p>
+			Survival Analysis is a field of statistics concerned with analyzing the amount of time until an event occurs. Common applications of survival analysis involve investigating the time until a death of a subject in a medical study or the time until the failure of a mechanical system. In this project we will analyze the failure rates of marriages, with "failure" being a divorce. As you can tell this is a very happy field of research! <br> <br>
+			This project is designed to be a soft introduction to applied survival analysis. Something to get you off the ground, so to speak. This project will be especially helpful for any undergraduate Math or Statistics student taking a class on the subject in the near future... perhaps PSTAT 175 at UC Santa Barbara.
+		</p>
+	</section>
+</body>
